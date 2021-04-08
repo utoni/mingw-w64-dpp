@@ -1,6 +1,3 @@
-[submodule "test/packages/EABase"]
-	path = test/packages/EABase
-	url = ../EABase.git
 [submodule "test/packages/EAAssert"]
 	path = test/packages/EAAssert
 	url = ../EAAssert.git
