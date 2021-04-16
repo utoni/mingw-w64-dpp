@@ -3,6 +3,7 @@ LOCAL_MINGW64_BUILD_DIR := ./x86_64-w64-mingw32
 LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
 LOCAL_MINGW64_DDK_INCLUDE_DIR := $(LOCAL_MINGW64_BUILD_DIR)/x86_64-w64-mingw32/include/ddk
 
+INSTALL = install
 CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
 CXX = $(dir $(CC))/x86_64-w64-mingw32-g++
@@ -37,6 +38,15 @@ EASTL_COMPAT := EASTL-compat/kcrt.opp
 3_TARGET = $(3_DRIVER_NAME).sys
 
 all: deps-print-local-notice check-vars $(1_TARGET) $(2_TARGET) $(3_TARGET)
+
+install: all
+	$(INSTALL) -d '$(DESTDIR)/'
+	$(INSTALL) -s --strip-program=$(dir $(CC))/x86_64-w64-mingw32-strip $(1_TARGET) $(DESTDIR)
+	$(INSTALL) $(1_DRIVER_NAME).bat $(DESTDIR)
+	$(INSTALL) -s --strip-program=$(dir $(CC))/x86_64-w64-mingw32-strip $(2_TARGET) $(DESTDIR)
+	$(INSTALL) $(2_DRIVER_NAME).bat $(DESTDIR)
+	$(INSTALL) -s --strip-program=$(dir $(CC))/x86_64-w64-mingw32-strip $(3_TARGET) $(DESTDIR)
+	$(INSTALL) $(3_DRIVER_NAME).bat $(DESTDIR)
 
 deps-print-local-notice: $(CC)
 ifeq ($(CC),$(LOCAL_MINGW64_CC))
