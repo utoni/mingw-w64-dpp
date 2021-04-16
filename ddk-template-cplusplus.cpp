@@ -1,11 +1,11 @@
 #include <ntddk.h>
 
-#include <vector>
-
 class TestSmth
 {
 public:
-    TestSmth() {}
+    TestSmth()
+    {
+    }
     void doSmth(void)
     {
         DbgPrint("%s\n", "Hello Class!");
@@ -21,30 +21,28 @@ static void test_cplusplus(void)
 extern "C"
 {
 
-DRIVER_INITIALIZE DriverEntry;
-DRIVER_UNLOAD DriverUnload;
+    DRIVER_INITIALIZE DriverEntry;
+    DRIVER_UNLOAD DriverUnload;
 
-NTSTATUS DriverEntry(
-	_In_  struct _DRIVER_OBJECT *DriverObject,
-	_In_  PUNICODE_STRING RegistryPath
-)
-{
-    DbgPrint("%s\n", "Hello ring0!");
+    NTSTATUS DriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
+    {
+        (void)DriverObject;
+        (void)RegistryPath;
 
-    /* support for service stopping */
-    DriverObject->DriverUnload = DriverUnload;
+        DbgPrint("%s\n", "Hello ring0!");
 
-    test_cplusplus();
+        /* support for service stopping */
+        DriverObject->DriverUnload = DriverUnload;
 
-    return STATUS_SUCCESS;
-}
+        test_cplusplus();
 
-VOID
-DriverUnload(
-    _In_ struct _DRIVER_OBJECT  *DriverObject
-)
-{
-    DbgPrint("%s\n", "Bye ring0!");
-}
+        return STATUS_SUCCESS;
+    }
 
+    VOID DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)
+    {
+        (void)DriverObject;
+
+        DbgPrint("%s\n", "Bye ring0!");
+    }
 }

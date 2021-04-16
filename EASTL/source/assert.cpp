@@ -15,7 +15,11 @@
 	#ifndef WIN32_LEAN_AND_MEAN
 		#define WIN32_LEAN_AND_MEAN
 	#endif
-	#include <Windows.h>
+	#ifdef __MINGW64__
+		#include <windows.h>
+	#else
+		#include <Windows.h>
+	#endif
 	EA_RESTORE_ALL_VC_WARNINGS();
 #elif defined(EA_PLATFORM_ANDROID)
 	#include <android/log.h>
