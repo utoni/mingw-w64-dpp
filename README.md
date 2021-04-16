@@ -39,3 +39,7 @@ make deps
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script
 - [sidhye](https://github.com/sidhye/dxx) for some copy paste ready CRT code ;)
+
+and last but not least:
+
+- [EA](https://github.com/electronicarts/EASTL), bad company, good STL
