@@ -2,6 +2,7 @@ LOCAL_MINGW64_BUILD_SCRIPT := ./mingw-w64-build/mingw-w64-build
 LOCAL_MINGW64_BUILD_DIR := ./x86_64-w64-mingw32
 LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
 LOCAL_MINGW64_DDK_INCLUDE_DIR := $(LOCAL_MINGW64_BUILD_DIR)/x86_64-w64-mingw32/include/ddk
+SIGNTOOL_PREFIX := codesign
 
 INSTALL = install
 CMAKE = cmake
@@ -41,6 +42,10 @@ all: deps-print-local-notice check-vars $(1_TARGET) $(2_TARGET) $(3_TARGET)
 
 install: all
 	$(INSTALL) -d '$(DESTDIR)/'
+	test -r "$(SIGNTOOL_PREFIX)-ca-cert.pem" && \
+		$(INSTALL) "$(SIGNTOOL_PREFIX)-ca-cert.pem" $(DESTDIR)
+	test -r "$(SIGNTOOL_PREFIX)-code.p12" && \
+		$(INSTALL) "$(SIGNTOOL_PREFIX)-code.p12" $(DESTDIR)
 	$(INSTALL) -s --strip-program=$(dir $(CC))/x86_64-w64-mingw32-strip $(1_TARGET) $(DESTDIR)
 	$(INSTALL) $(1_DRIVER_NAME).bat $(DESTDIR)
 	$(INSTALL) -s --strip-program=$(dir $(CC))/x86_64-w64-mingw32-strip $(2_TARGET) $(DESTDIR)
@@ -116,9 +121,15 @@ $(EASTL_STATIC_LIB): .deps-built
 			-DCMAKE_CXX_FLAGS='-ffunction-sections -fdata-sections $(CXXFLAGS) $(EASTL_CXXFLAGS)' && \
 		$(MAKE) VERBOSE=1
 
+$(SIGNTOOL_PREFIX)-code.p12:
+	./create_codesign_ca.sh $(SIGNTOOL_PREFIX)
+
+$(SIGNTOOL_PREFIX): $(SIGNTOOL_PREFIX)-code.p12
+
 distclean: clean
 	rm -f .deps-built
 	rm -rf $(LOCAL_MINGW64_BUILD_DIR)
+	rm -f codesign*
 
 clean:
 	rm -f $(1_OBJECTS) $(1_TARGET)

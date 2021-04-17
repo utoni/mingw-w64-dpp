@@ -152,6 +152,13 @@ void * operator new[](size_t size, size_t, size_t, const char *, int, unsigned, 
 
 extern "C" void __cxa_pure_virtual(void)
 {
+    // definitly not perfect, but we get at least a notification
+    while (1)
+    {
+        DbgPrint("Pure virtual function call..\n");
+        LARGE_INTEGER li = { .QuadPart = -10000000 };
+        KeDelayExecutionThread(KernelMode, TRUE, &li);
+    }
 }
 
 // stolen from musl: https://elixir.bootlin.com/musl/v1.1.9/source/src/math/ceilf.c

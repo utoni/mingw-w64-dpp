@@ -38,7 +38,7 @@ make deps
 ## Thanks!
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script
-- [sidhye](https://github.com/sidhye/dxx) for some copy paste ready CRT code ;)
+- [sidyhe](https://github.com/sidyhe/dxx) for some copy paste ready CRT code ;)
 
 and last but not least:
 
