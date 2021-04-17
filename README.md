@@ -13,7 +13,7 @@ Instead either use Zeranoe's build script with `make deps` or use your own.
 
 1. ddk-template: plain and stupid ddk C example
 2. ddk-template-cplusplus: same, but written in C++, including a very complex class
-3. ddk-template-cplusplus: C++ example w/ (EA)STL integration, everything usable except for Threads
+3. ddk-template-cplusplus: C++ example w/ (EA)STL integration, everything usable except for Threads and Exceptions
 
 ## Build and Test
 
