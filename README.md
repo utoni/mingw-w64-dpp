@@ -12,8 +12,8 @@ Instead either use Zeranoe's build script with `make deps` or use your own.
 ## What?
 
 1. ddk-template: plain and stupid ddk C example
-2. ddk-template-cplusplus: same, but written in C++, including a very complex class
-3. ddk-template-cplusplus: C++ example w/ (EA)STL integration, basicially everything usable except for SEH and assertions.
+2. ddk-template-cplusplus: same, but written in C++, including a very complex class and some MT
+3. ddk-template-cplusplus-EASTL: C++ example w/ (EA)STL integration, basicially everything usable except for SEH and assertions.
 
 ## Build and Test
 
