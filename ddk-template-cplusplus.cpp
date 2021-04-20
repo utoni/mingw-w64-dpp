@@ -1,5 +1,7 @@
 #include <ntddk.h>
 
+#include <DriverThread.hpp>
+
 class TestSmth
 {
 public:
@@ -12,10 +14,30 @@ public:
     }
 };
 
+static void threadRoutine(PVOID threadContext)
+{
+    DbgPrint("ThreadRoutine %p, ThreadContext: %p\n", threadRoutine, threadContext);
+    for (size_t i = 3; i > 0; --i)
+    {
+        DbgPrint("ThreadLoop: %zu\n", i);
+    }
+    DbgPrint("Fin.\n");
+    DriverThread::Semaphore * const sem = (DriverThread::Semaphore *)threadContext;
+    sem->Release();
+    TERMINATE_MYSELF(STATUS_SUCCESS);
+}
+
 static void test_cplusplus(void)
 {
     TestSmth t;
     t.doSmth();
+
+    DriverThread::Semaphore sem;
+    DriverThread::Thread dt;
+    dt.Start(threadRoutine, (PVOID)&sem);
+    sem.Wait();
+    DbgPrint("Thread signaled semaphore.\n");
+    dt.WaitForTermination();
 }
 
 extern "C"

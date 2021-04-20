@@ -10,7 +10,7 @@ CC = $(LOCAL_MINGW64_CC)
 CXX = $(dir $(CC))/x86_64-w64-mingw32-g++
 DDK_INCLUDE_DIR = $(LOCAL_MINGW64_DDK_INCLUDE_DIR)
 CFLAGS := -Wall -Wextra -m64 -shared \
-	-I$(DDK_INCLUDE_DIR) \
+	-I. -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset
 CXXFLAGS := -fno-exceptions -fno-rtti
@@ -23,6 +23,8 @@ EASTL_CXXFLAGS := -IEASTL/include -IEASTL/test/packages/EABase/include/Common \
 	-Wno-unknown-pragmas \
 	-Wno-deprecated-copy \
 	-Wl,--gc-sections
+ADDITIONAL_OBJS := DriverThread.opp
+ADDITIONAL_HDRS := DriverThread.hpp
 EASTL_STATIC_LIB := EASTL-build/libEASTL.a
 EASTL_COMPAT := EASTL-compat/kcrt.opp
 
@@ -136,6 +138,7 @@ clean:
 	rm -f $(2_OBJECTS) $(2_TARGET)
 	rm -f $(3_OBJECTS) $(3_TARGET)
 	rm -f $(EASTL_COMPAT) $(EASTL_STATIC_LIB)
+	rm -f $(ADDITIONAL_OBJS)
 	$(MAKE) -C EASTL-build clean
 
 %.o: %.c .deps-built
@@ -150,11 +153,11 @@ $(1_TARGET): .deps-built $(1_OBJECTS)
 		-Wl,--entry,DriverEntry -nostartfiles -nostdlib -o $(1_TARGET) \
 		$(1_OBJECTS) -lntoskrnl -lhal
 
-$(2_TARGET): .deps-built $(2_OBJECTS)
+$(2_TARGET): .deps-built $(ADDITIONAL_HDRS) $(ADDITIONAL_OBJS) $(2_OBJECTS)
 	$(CXX) $(CFLAGS) -Wl,--subsystem,native -Wl,--image-base,0x140000000 -Wl,--dynamicbase -Wl,--nxcompat \
 		-Wl,--file-alignment,0x200 -Wl,--section-alignment,0x1000 -Wl,--stack,0x100000 \
 		-Wl,--entry,DriverEntry@8 -nostartfiles -nostdlib -o $(2_TARGET) \
-		$(2_OBJECTS) -lntoskrnl -lhal
+		$(ADDITIONAL_OBJS) $(2_OBJECTS) -lntoskrnl -lhal
 
 $(3_TARGET): .deps-built $(EASTL_STATIC_LIB) $(EASTL_COMPAT) $(3_OBJECTS)
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -Wl,--subsystem,native -Wl,--image-base,0x140000000 -Wl,--dynamicbase -Wl,--nxcompat \
