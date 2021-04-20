@@ -19,7 +19,7 @@ extern "C" void InterceptorThreadRoutine(PVOID threadContext)
     PsTerminateSystemThread(self->m_routine(self->m_threadContext));
 }
 
-NTSTATUS DriverThread::Thread::Start(threadRoutine routine, PVOID threadContext)
+NTSTATUS DriverThread::Thread::Start(threadRoutine_t routine, PVOID threadContext)
 {
     HANDLE threadHandle;
     NTSTATUS status;
@@ -40,8 +40,12 @@ NTSTATUS DriverThread::Thread::Start(threadRoutine routine, PVOID threadContext)
 
 NTSTATUS DriverThread::Thread::WaitForTermination(LONGLONG timeout)
 {
+    if (PsGetCurrentThreadId() == m_threadId)
+    {
+        return STATUS_UNSUCCESSFUL;
+    }
     LockGuard lock(m_mutex);
-    if (m_threadObject == nullptr || PsGetCurrentThreadId() == m_threadId)
+    if (m_threadObject == nullptr)
     {
         return STATUS_UNSUCCESSFUL;
     }
