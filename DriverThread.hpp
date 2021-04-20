@@ -3,20 +3,55 @@
 
 #include <ntddk.h>
 
-#define TERMINATE_MYSELF(ntstatus) PsTerminateSystemThread(ntstatus);
+extern "C" void InterceptorThreadRoutine(PVOID threadContext);
+
+typedef NTSTATUS (*threadRoutine_t)(PVOID);
 
 namespace DriverThread
 {
 
+class Mutex
+{
+public:
+    Mutex(void);
+    ~Mutex(void);
+
+private:
+    void Lock();
+    void Unlock();
+
+    volatile long int m_interlock;
+
+    friend class LockGuard;
+};
+
+class LockGuard
+{
+public:
+    LockGuard(Mutex & m);
+    ~LockGuard(void);
+
+private:
+    Mutex m_Lock;
+};
+
 class Thread
 {
 public:
-    Thread();
-    NTSTATUS Start(PKSTART_ROUTINE threadRoutine, PVOID threadContext);
+    Thread(void);
+    ~Thread(void);
+    NTSTATUS Start(threadRoutine_t routine, PVOID threadContext);
     NTSTATUS WaitForTermination(LONGLONG timeout = 0);
+    HANDLE GetThreadId(void);
 
 private:
-    PETHREAD m_threadObject;
+    friend void ::InterceptorThreadRoutine(PVOID threadContext);
+
+    HANDLE m_threadId = nullptr;
+    PETHREAD m_threadObject = nullptr;
+    Mutex m_mutex;
+    threadRoutine_t m_routine;
+    PVOID m_threadContext;
 };
 
 class Spinlock
@@ -33,7 +68,7 @@ private:
 class Semaphore
 {
 public:
-    explicit Semaphore(LONG initialValue = 0, LONG maxValue = MAXLONG);
+    Semaphore(LONG initialValue = 0, LONG maxValue = MAXLONG);
     NTSTATUS Wait(LONGLONG timeout = 0);
     LONG Release(LONG adjustment = 1);
 

@@ -14,17 +14,25 @@ public:
     }
 };
 
-static void threadRoutine(PVOID threadContext)
+struct threadContext
+{
+    DriverThread::Semaphore sem;
+    DriverThread::Thread dth;
+};
+
+static NTSTATUS threadRoutine(PVOID threadContext)
 {
     DbgPrint("ThreadRoutine %p, ThreadContext: %p\n", threadRoutine, threadContext);
     for (size_t i = 3; i > 0; --i)
     {
         DbgPrint("ThreadLoop: %zu\n", i);
     }
-    DbgPrint("Fin.\n");
-    DriverThread::Semaphore * const sem = (DriverThread::Semaphore *)threadContext;
-    sem->Release();
-    TERMINATE_MYSELF(STATUS_SUCCESS);
+    struct threadContext * const ctx = (struct threadContext *)threadContext;
+    DbgPrint("Fin. ThreadId: %p\n", ctx->dth.GetThreadId());
+    ctx->sem.Release();
+    DbgPrint("Thread WaitForTermination: 0x%X\n", ctx->dth.WaitForTermination()); // must return STATUS_UNSUCCESSFUL;
+
+    return STATUS_SUCCESS;
 }
 
 static void test_cplusplus(void)
@@ -32,12 +40,13 @@ static void test_cplusplus(void)
     TestSmth t;
     t.doSmth();
 
-    DriverThread::Semaphore sem;
-    DriverThread::Thread dt;
-    dt.Start(threadRoutine, (PVOID)&sem);
-    sem.Wait();
-    DbgPrint("Thread signaled semaphore.\n");
-    dt.WaitForTermination();
+    struct threadContext ctx;
+    ctx.dth.Start(threadRoutine, (PVOID)&ctx);
+    ctx.sem.Wait();
+    DbgPrint("MainThread semaphore signaled.\n");
+    ctx.dth.WaitForTermination();
+    ctx.dth.WaitForTermination();
+    DbgPrint("MainThread EOF\n");
 }
 
 extern "C"
