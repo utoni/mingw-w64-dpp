@@ -930,7 +930,6 @@ namespace Internal
 	};
 }// namespace Internal
 
-static const Internal::ignore_t ignore;
 
 
 // tie 

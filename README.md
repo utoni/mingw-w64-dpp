@@ -35,6 +35,31 @@ Build Mingw64 only:
 make deps
 ``
 
+## HowTo use it in your own project
+
+At the moment only **GMake** is supported.
+The process is similiar to KBuild from the Linux kernel.
+You'll write a minimal Makefile that triggers some targets from **Makefile.external**.
+
+You can use the **Makefile** in this repository.
+A minimal working **Makefile** for your own project could look alike:
+
+```make
+DRIVER_NAME = Driver
+DRIVER_SOURCES = $(DRIVER_NAME).cpp
+DRIVER_OBJECTS = $(DRIVER_NAME).opp
+DRIVER_TARGET = $(DRIVER_NAME).sys
+
+$(DRIVER_TARGET): $(DRIVER_SOURCES)
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.external \
+		DRIVER_TARGET="$(DRIVER_TARGET)" \
+		DRIVER_DIR="$(PWD)" \
+		DRIVER_OBJECTS="$(DRIVER_OBJECTS)" \
+		driver-cpp
+```
+
+Build it with: `make Driver.sys DPP_ROOT=[path/to/this/repository]`
+
 ## Thanks!
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script

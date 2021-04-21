@@ -1,0 +1,60 @@
+include Makefile.internal
+
+%.o: %.c
+	$(Q)$(CC) $(CFLAGS) -c $< -o $@
+	@echo 'CC  $@'
+
+%.opp: %.cpp
+	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c $< -o $@
+	@echo 'CXX $@'
+
+check-env:
+ifndef DRIVER_TARGET
+	$(error DRIVER_TARGET is undefined)
+endif
+ifndef DRIVER_DIR
+	$(error DRIVER_DIR is undefined)
+endif
+ifndef DRIVER_OBJECTS
+	$(error DRIVER_OBJECTS is undefined)
+endif
+
+driver-c: check-env deps $(addprefix $(DRIVER_DIR)/,$(DRIVER_OBJECTS))
+	$(Q)$(CC) -std=c99 $(CFLAGS) \
+		$(DRIVER_LDFLAGS) \
+		-o '$(DRIVER_DIR)/$(DRIVER_TARGET)' \
+		$(addprefix $(DRIVER_DIR)/,$(DRIVER_OBJECTS)) \
+		$(DRIVER_LIBS)
+	@echo 'LD  $(DRIVER_DIR)/$(DRIVER_TARGET)'
+
+driver-cpp: check-env deps \
+	$(ADDITIONAL_HDRS) $(ADDITIONAL_OBJS) \
+	$(EASTL_STATIC_LIB) $(EASTL_COMPAT) \
+	$(addprefix $(DRIVER_DIR)/,$(DRIVER_OBJECTS))
+
+	$(Q)$(CXX) $(CFLAGS) \
+		$(CXXFLAGS) \
+		$(EASTL_CXXFLAGS) \
+		$(DRIVER_LDFLAGS) \
+		-o '$(DRIVER_DIR)/$(DRIVER_TARGET)' \
+		$(addprefix $(DRIVER_DIR)/,$(DRIVER_OBJECTS)) \
+		$(ADDITIONAL_OBJS) $(EASTL_COMPAT) $(EASTL_STATIC_LIB) $(DRIVER_LIBS)
+	@echo 'LD  $(DRIVER_DIR)/$(DRIVER_TARGET)'
+
+check-env-install:
+ifndef TARGETS
+	$(error TARGETS is undefined)
+endif
+
+install: check-env-install $(addprefix $(DRIVER_DIR)/,$(TARGETS))
+	$(INSTALL) -s --strip-program=$(dir $(CC))/x86_64-w64-mingw32-strip \
+		$(addprefix $(DRIVER_DIR)/,$(TARGETS)) $(DESTDIR)
+
+install-sign: $(SIGNTOOL_PREFIX) install
+	$(INSTALL) -d '$(DESTDIR)/'
+	test -r "$(SIGNTOOL_PREFIX)-ca-cert.pem" && \
+		$(INSTALL) "$(SIGNTOOL_PREFIX)-ca-cert.pem" $(DESTDIR)
+	test -r "$(SIGNTOOL_PREFIX)-code.p12" && \
+		$(INSTALL) "$(SIGNTOOL_PREFIX)-code.p12" $(DESTDIR)
+
+.PHONY: check-env driver-c driver-cpp check-env-install install install-sign
