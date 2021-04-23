@@ -14,6 +14,18 @@ public:
     }
 };
 
+class Derived : public TestSmth
+{
+public:
+    Derived()
+    {
+    }
+    void doSmth(void)
+    {
+        DbgPrint("%s\n", "Hello Derived!");
+    }
+};
+
 struct threadContext
 {
     DriverThread::Semaphore sem;
@@ -39,6 +51,8 @@ static void test_cplusplus(void)
 {
     TestSmth t;
     t.doSmth();
+    Derived d;
+    d.doSmth();
 
     struct threadContext ctx;
     ctx.dth.Start(threadRoutine, (PVOID)&ctx);

@@ -8,6 +8,7 @@ endif
 LOCAL_MINGW64_BUILD_SCRIPT := $(DPP_EXTERNAL_MAKEFILE)/mingw-w64-build/mingw-w64-build
 LOCAL_MINGW64_BUILD_DIR := $(DPP_EXTERNAL_MAKEFILE)/x86_64-w64-mingw32
 LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
+SIGNTOOL := osslsigncode
 SIGNTOOL_PREFIX := codesign
 
 INSTALL = install
@@ -15,7 +16,7 @@ CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
 CXX = $(dir $(CC))/x86_64-w64-mingw32-g++
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
-CFLAGS := -Wall -Wextra -m64 -shared \
+CFLAGS := -Wall -Wextra -m64 -shared -fPIC \
 	-I. -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset
@@ -38,11 +39,14 @@ DRIVER_LDFLAGS := -Wl,--subsystem,native \
 	-Wl,--gc-sections \
 	-nostartfiles -nostdlib
 DRIVER_LIBS := -lntoskrnl -lhal
+USER_LDFLAGS := -Wl,--dynamicbase -Wl,--nxcompat \
+	-Wl,--gc-sections
 
-ADDITIONAL_OBJS := DriverThread.opp
-ADDITIONAL_HDRS := DriverThread.hpp
+DRIVER_ADDITIONAL_OBJS := DriverThread.opp
+DRIVER_ADDITIONAL_HDRS := DriverThread.hpp
 EASTL_STATIC_LIB := EASTL-build/libEASTL.a
-EASTL_COMPAT := EASTL-compat/kcrt.opp
+DRIVER_EASTL_COMPAT := EASTL-compat/kcrt.opp
+USER_EASTL_COMPAT := EASTL-compat/ucrt.opp
 DEPS_STAMP := .deps-built
 
 deps-print-local-notice: $(CC)
@@ -102,8 +106,8 @@ distclean: clean
 	git submodule deinit --all
 
 clean:
-	rm -f $(EASTL_COMPAT) $(EASTL_STATIC_LIB)
-	rm -f $(ADDITIONAL_OBJS)
+	rm -f $(DRIVER_EASTL_COMPAT) $(USER_EASTL_COMPAT) $(EASTL_STATIC_LIB)
+	rm -f $(DRIVER_ADDITIONAL_OBJS)
 	rm -rf EASTL-build
 
 .PHONY: deps distclean-deps clean-deps

@@ -19,10 +19,11 @@ INSTALL = install
 all: $(1_TARGET) $(2_TARGET) $(3_TARGET)
 
 install: all
-	$(MAKE) -C $(DPP_ROOT) -f Makefile.external install-sign \
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.external \
 		DESTDIR=$(DESTDIR) \
 		TARGETS="$(1_TARGET) $(2_TARGET) $(3_TARGET)" \
-		DRIVER_DIR="$(PWD)"
+		DRIVER_DIR="$(CURDIR)" \
+		install-sign
 	$(INSTALL) $(1_DRIVER_NAME).bat $(DESTDIR)
 	$(INSTALL) $(2_DRIVER_NAME).bat $(DESTDIR)
 	$(INSTALL) $(3_DRIVER_NAME).bat $(DESTDIR)
@@ -40,7 +41,7 @@ clean:
 $(1_TARGET): $(1_SOURCES)
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.external \
 		DRIVER_TARGET="$(1_TARGET)" \
-		DRIVER_DIR="$(PWD)" \
+		DRIVER_DIR="$(CURDIR)" \
 		DRIVER_OBJECTS="$(1_OBJECTS)" \
 		driver-c
 
@@ -48,7 +49,7 @@ $(1_TARGET): $(1_SOURCES)
 $(2_TARGET): $(2_SOURCES)
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.external \
 		DRIVER_TARGET="$(2_TARGET)" \
-		DRIVER_DIR="$(PWD)" \
+		DRIVER_DIR="$(CURDIR)" \
 		DRIVER_OBJECTS="$(2_OBJECTS)" \
 		driver-cpp
 
@@ -56,7 +57,7 @@ $(2_TARGET): $(2_SOURCES)
 $(3_TARGET): $(3_SOURCES)
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.external \
 		DRIVER_TARGET="$(3_TARGET)" \
-		DRIVER_DIR="$(PWD)" \
+		DRIVER_DIR="$(CURDIR)" \
 		DRIVER_OBJECTS="$(3_OBJECTS)" \
 		driver-cpp
 
