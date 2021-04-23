@@ -60,6 +60,17 @@ $(DRIVER_TARGET): $(DRIVER_SOURCES)
 
 Build it with: `make Driver.sys DPP_ROOT=[path/to/this/repository]`
 
+It also possible to (self-)sign your driver and install your driver with:
+
+```make
+install: $(DRIVER_TARGET)
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.external \
+		DESTDIR="$(DESTDIR)" \
+		TARGETS="$(DRIVER_TARGET)" \
+		DRIVER_DIR="$(CURDIR)" \
+		install-sign
+```
+
 ## Thanks!
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script

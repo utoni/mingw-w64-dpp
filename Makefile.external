@@ -92,8 +92,9 @@ install-sign: check-env-install $(SIGNTOOL_PREFIX) $(addprefix $(DRIVER_DIR)/,$(
 	for target in $(TARGETS); do \
 		rm -f "$(DESTDIR)/$$target"; \
 		$(SIGNTOOL) sign -pkcs12 $(SIGNTOOL_PREFIX)-code.p12 -ac $(SIGNTOOL_PREFIX)-ca-cert.pem \
-			-in "$(DRIVER_DIR)/$$target" -out "$(DESTDIR)/$$target" -askpass; \
+			-in "$(DRIVER_DIR)/$$target" \
+			-out "$(DESTDIR)/$$target"; \
 	done
-	$(INSTALL) "$(SIGNTOOL_PREFIX)-ca-cert.pem" $(DESTDIR)
+	$(INSTALL) "$(SIGNTOOL_PREFIX)-ca-cert.pem" '$(DESTDIR)/$(SIGNTOOL_PREFIX)-ca-cert.crt'
 
 .PHONY: check-driver-env check-user-env driver-c driver-cpp user-c user-cpp check-env-install install install-sign

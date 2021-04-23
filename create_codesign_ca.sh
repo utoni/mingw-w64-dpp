@@ -94,6 +94,7 @@ openssl pkcs12 -export \
   -inkey "${CODE}-private.pem" \
   -in "${CODE}-cert.pem" \
   -chain -CAfile "${ROOT}-cert.pem" \
-  -out "${CODE}.p12"
-openssl pkcs12 -in "${CODE}.p12" -info -nodes -nokeys -out "${CODE}.p12.txt"
+  -out "${CODE}.p12" \
+  -passout pass:""
+openssl pkcs12 -in "${CODE}.p12" -info -nodes -nokeys -out "${CODE}.p12.txt" -passin pass:"" -passout pass:""
 openssl asn1parse -i -inform DER -in "${CODE}.p12"
