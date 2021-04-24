@@ -60,7 +60,22 @@ is_set = \
 	$(if $1,, \
 	$(error ERROR: $(if $2,$2)))
 
+path_exists = \
+	$(if $(realpath $1),, \
+	$(error ERROR: $1 does not exist, run `make -C $(DPP_ROOT) deps` first.))
+
+define CHECK_REQUIRED_PATHS
+	$(call path_exists,$(CC))
+	$(call path_exists,$(CXX))
+	$(call path_exists,$(DDK_INCLUDE_DIR))
+	$(call path_exists,$(DRIVER_ADDITIONAL_OBJS))
+	$(call path_exists,$(EASTL_STATIC_LIB))
+	$(call path_exists,$(DRIVER_EASTL_COMPAT))
+	$(call path_exists,$(USER_EASTL_COMPAT))
+endef
+
 define BUILD_C_OBJECT
+	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
 	$(Q)$(CC) -std=c99 $(CFLAGS) -c $(1) -o $(2)
@@ -68,6 +83,7 @@ define BUILD_C_OBJECT
 endef
 
 define BUILD_CPP_OBJECT
+	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
 	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c $(1) -o $(2)
@@ -75,6 +91,7 @@ define BUILD_CPP_OBJECT
 endef
 
 define LINK_C_KERNEL_TARGET
+	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Object files missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
 	$(Q)$(CC) \
@@ -87,6 +104,7 @@ define LINK_C_KERNEL_TARGET
 endef
 
 define LINK_C_USER_TARGET
+	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Object files missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
 	$(Q)$(CC) \
@@ -98,6 +116,7 @@ define LINK_C_USER_TARGET
 endef
 
 define LINK_CPP_KERNEL_TARGET
+	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Object files missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
 	$(Q)$(CXX) \
@@ -115,6 +134,7 @@ define LINK_CPP_KERNEL_TARGET
 endef
 
 define LINK_CPP_USER_TARGET
+	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Object files missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
 	$(Q)$(CXX) \

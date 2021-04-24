@@ -68,7 +68,7 @@ $(SIGNTOOL_PREFIX)-code.p12:
 $(SIGNTOOL_PREFIX): $(SIGNTOOL_PREFIX)-code.p12
 
 distclean: clean
-	rm -f $(SIGNTOOL_PREFIX)-ca-* $(SIGNTOOL_PREFIX)-code-*
+	rm -f $(SIGNTOOL_PREFIX)-ca-* $(SIGNTOOL_PREFIX)-code*
 	rm -rf $(LOCAL_MINGW64_BUILD_DIR)
 	git submodule deinit --all
 
