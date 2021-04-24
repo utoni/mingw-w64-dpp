@@ -59,7 +59,7 @@ $(EASTL_STATIC_LIB): $(EASTL_DEPS)
 			-DCMAKE_CXX_COMPILER="$(realpath $(CXX))" \
 			-DCMAKE_SYSTEM_NAME="Windows" \
 			-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
-			-DCMAKE_CXX_FLAGS='-ffunction-sections -fdata-sections $(CXXFLAGS) $(EASTL_CXXFLAGS)' && \
+			-DCMAKE_CXX_FLAGS='$(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS)' && \
 		$(MAKE) $(CMAKE_Q)
 
 $(SIGNTOOL_PREFIX)-code.p12:

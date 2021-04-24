@@ -18,7 +18,8 @@ CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
 CXX = $(dir $(CC))x86_64-w64-mingw32-g++
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
-CFLAGS := -Wall -Wextra -m64 -shared -fPIC \
+CFLAGS := -Wall -Wextra -m64 -fPIC \
+	-ffunction-sections -fdata-sections \
 	-I$(DPP_ROOT) -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset
@@ -31,7 +32,8 @@ EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/
 	-DEA_COMPILER_MANAGED_CPP=1 \
 	-Wno-unknown-pragmas \
 	-Wno-deprecated-copy
-DRIVER_LDFLAGS := -Wl,--subsystem,native \
+DRIVER_LDFLAGS := -shared \
+	-Wl,--subsystem,native \
 	-Wl,--image-base,0x140000000 \
 	-Wl,--dynamicbase -Wl,--nxcompat \
 	-Wl,--file-alignment,0x200 \
