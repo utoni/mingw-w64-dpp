@@ -37,25 +37,25 @@ make deps
 
 ## HowTo use it in your own project
 
-At the moment only **GMake** is supported.
-The process is similiar to KBuild from the Linux kernel.
-You'll write a minimal Makefile that triggers some targets from **Makefile.external**.
-
-You can use the **Makefile** in this repository.
+At the moment only a **GMake** build system is supported.
 A minimal working **Makefile** for your own project could look alike:
 
 ```make
 DRIVER_NAME = Driver
-DRIVER_SOURCES = $(DRIVER_NAME).cpp
 DRIVER_OBJECTS = $(DRIVER_NAME).opp
 DRIVER_TARGET = $(DRIVER_NAME).sys
 
-$(DRIVER_TARGET): $(DRIVER_SOURCES)
-	$(MAKE) -C $(DPP_ROOT) -f Makefile.external \
-		DRIVER_TARGET="$(DRIVER_TARGET)" \
-		DRIVER_DIR="$(PWD)" \
-		DRIVER_OBJECTS="$(DRIVER_OBJECTS)" \
-		driver-cpp
+ifndef DPP_ROOT
+$(error DPP_ROOT is undefined)
+endif
+
+include $(DPP_ROOT)/Makefile.inc
+
+%.opp: %.cpp
+	$(call BUILD_CPP_OBJECT,$<,$@)
+
+$(DRIVER_TARGET): $(DRIVER_OBJECTS)
+	$(call LINK_CPP_KERNEL_TARGET,$(DRIVER_OBJECTS),$@)
 ```
 
 Build it with: `make Driver.sys DPP_ROOT=[path/to/this/repository]`
@@ -64,11 +64,7 @@ It also possible to (self-)sign your driver and install your driver with:
 
 ```make
 install: $(DRIVER_TARGET)
-	$(MAKE) -C $(DPP_ROOT) -f Makefile.external \
-		DESTDIR="$(DESTDIR)" \
-		TARGETS="$(DRIVER_TARGET)" \
-		DRIVER_DIR="$(CURDIR)" \
-		install-sign
+    $(call INSTALL_EXEC_SIGN,$(DRIVER_TARGET))
 ```
 
 ## Thanks!

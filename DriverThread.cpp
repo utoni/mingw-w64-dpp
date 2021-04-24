@@ -71,14 +71,19 @@ DriverThread::Spinlock::Spinlock(void)
     KeInitializeSpinLock(&m_spinLock);
 }
 
-NTSTATUS DriverThread::Spinlock::Acquire(KIRQL * const oldIrql)
+NTSTATUS DriverThread::Spinlock::Acquire(void)
 {
-    return KeAcquireSpinLock(&m_spinLock, oldIrql);
+    return KeAcquireSpinLock(&m_spinLock, &m_oldIrql);
 }
 
-void DriverThread::Spinlock::Release(KIRQL * const oldIrql)
+void DriverThread::Spinlock::Release(void)
 {
-    KeReleaseSpinLock(&m_spinLock, *oldIrql);
+    KeReleaseSpinLock(&m_spinLock, m_oldIrql);
+}
+
+KIRQL DriverThread::Spinlock::GetOldIrql(void)
+{
+    return m_oldIrql;
 }
 
 // Semaphore

@@ -58,10 +58,12 @@ class Spinlock
 {
 public:
     Spinlock(void);
-    NTSTATUS Acquire(KIRQL * const oldIrql);
-    void Release(KIRQL * const oldIrql);
+    NTSTATUS Acquire(void);
+    void Release(void);
+    KIRQL GetOldIrql(void);
 
 private:
+    KIRQL m_oldIrql;
     KSPIN_LOCK m_spinLock;
 };
 
