@@ -67,6 +67,15 @@ install: $(DRIVER_TARGET)
     $(call INSTALL_EXEC_SIGN,$(DRIVER_TARGET))
 ```
 
+## Known issues
+
+Defining classes (by value, not pointer) with a static qualifier won't work because something seems broken with the static initialization of (non-primitive) globals.
+Meaning code `static MyClass test;` fails whereas `static MyClass * test = new MyClass();` will sill work.
+
+The issue is related to `__static_initialization_and_destruction` as it does not call the appropriate ctor's and dtor's (pushing dtor's via `atexit()`).
+The latter one may be related to `-Wl,--subsystem,native` as in kernel space there is usually no need for calling `atexit()`.
+I've tried adding C++ initializers manually, but they did not survive linker optimizations. There may be custom linker script required to fix it.
+
 ## Thanks!
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script

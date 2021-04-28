@@ -7,17 +7,26 @@ class TestSmth
 public:
     TestSmth()
     {
+        DbgPrint("%s\n", "ctor");
+    }
+    ~TestSmth()
+    {
+        DbgPrint("%s\n", "dtor");
     }
     void doSmth(void)
     {
         DbgPrint("%s\n", "Hello Class!");
     }
 };
+static TestSmth * cdtor_test;
 
 class Derived : public TestSmth
 {
 public:
     Derived()
+    {
+    }
+    ~Derived()
     {
     }
     void doSmth(void)
@@ -75,6 +84,7 @@ extern "C"
         (void)RegistryPath;
 
         DbgPrint("%s\n", "Hello ring0!");
+        cdtor_test = new TestSmth();
 
         /* support for service stopping */
         DriverObject->DriverUnload = DriverUnload;
@@ -88,6 +98,7 @@ extern "C"
     {
         (void)DriverObject;
 
+        delete cdtor_test;
         DbgPrint("%s\n", "Bye ring0!");
     }
 }
