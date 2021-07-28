@@ -18,12 +18,16 @@ CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
 CXX = $(dir $(CC))x86_64-w64-mingw32-g++
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
-CFLAGS := -Wall -Wextra -m64 -fPIC -fvisibility=hidden \
+CFLAGS := -Wall -Wextra -Wno-sign-compare \
+	-m64 -fPIC -fvisibility=hidden \
 	-ffunction-sections -fdata-sections -fno-builtin -ffreestanding \
-	-I$(DPP_ROOT) -I$(DDK_INCLUDE_DIR) \
+	-I$(DPP_ROOT)/CRT -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset
-CXXFLAGS := -fno-exceptions -fno-rtti
+ifneq ($(WERROR),)
+CFLAGS += -Werror
+endif
+CXXFLAGS := -fno-exceptions -fno-rtti -fuse-cxa-atexit
 EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/EABase/include/Common \
 	-DEASTL_THREAD_SUPPORT_AVAILABLE=0 \
 	-DEASTL_EXCEPTIONS_ENABLED=0 \
@@ -39,24 +43,27 @@ DRIVER_LDFLAGS := -shared \
 	-Wl,--file-alignment,0x200 \
 	-Wl,--section-alignment,0x1000 \
 	-Wl,--stack,0x100000 \
-	-Wl,--entry,DriverEntry \
 	-Wl,--gc-sections \
+	-Wl,--exclude-all-symbols \
+	-Wl,--entry,_CRT_DriverEntry \
 	-nostartfiles -nodefaultlibs -nostdlib
 DRIVER_LIBS := -lntoskrnl -lhal
-USER_LDFLAGS := -Wl,--dynamicbase -Wl,--nxcompat \
-	-Wl,--gc-sections
+USER_LDFLAGS := -Wl,--dynamicbase -Wl,--nxcompat -Wl,--gc-sections
 
-DRIVER_ADDITIONAL_DEPS := $(DPP_ROOT)/DriverThread.cpp $(DPP_ROOT)/DriverThread.hpp
-DRIVER_ADDITIONAL_OBJS := $(DPP_ROOT)/DriverThread.opp
+DRIVER_ADDITIONAL_DEPS := $(DPP_ROOT)/CRT/DriverThread.cpp $(DPP_ROOT)/CRT/DriverThread.hpp
+DRIVER_ADDITIONAL_OBJS := $(DPP_ROOT)/CRT/DriverThread.opp
 
 EASTL_DEPS := $(wildcard $(DPP_ROOT)/EASTL/source/*.cpp) $(wildcard $(DPP_ROOT)/EASTL/include/EASTL/*.h)
 EASTL_STATIC_LIB := $(DPP_ROOT)/EASTL-build/libEASTL.a
 
-DRIVER_EASTL_COMPAT_DEPS := $(DPP_ROOT)/EASTL-compat/kcrt.cpp
-DRIVER_EASTL_COMPAT := $(DPP_ROOT)/EASTL-compat/kcrt.opp
+DRIVER_CRT_DEPS := $(DPP_ROOT)/CRT/kcrt.c
+DRIVER_CRT := $(DPP_ROOT)/CRT/kcrt.o
 
-USER_EASTL_COMPAT_DEPS := $(DPP_ROOT)/EASTL-compat/ucrt.cpp
-USER_EASTL_COMPAT := $(DPP_ROOT)/EASTL-compat/ucrt.opp
+DRIVER_CRTPLUSPLUS_DEPS := $(DPP_ROOT)/CRT/kcrt.cpp $(DPP_ROOT)/CRT/kcrt.c
+DRIVER_CRTPLUSPLUS := $(DPP_ROOT)/CRT/kcrt.opp $(DPP_ROOT)/CRT/kcrt.o
+
+USER_CRT_DEPS := $(DPP_ROOT)/CRT/ucrt.cpp
+USER_CRT := $(DPP_ROOT)/CRT/ucrt.opp
 
 is_set = \
 	$(if $1,, \
@@ -72,8 +79,9 @@ define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(DDK_INCLUDE_DIR))
 	$(call path_exists,$(DRIVER_ADDITIONAL_OBJS))
 	$(call path_exists,$(EASTL_STATIC_LIB))
-	$(call path_exists,$(DRIVER_EASTL_COMPAT))
-	$(call path_exists,$(USER_EASTL_COMPAT))
+	$(call path_exists,$(DRIVER_CRT))
+	$(call path_exists,$(DRIVER_CRTPLUSPLUS))
+	$(call path_exists,$(USER_CRT))
 endef
 
 define BUILD_C_OBJECT
@@ -99,8 +107,10 @@ define LINK_C_KERNEL_TARGET
 	$(Q)$(CC) \
 		$(CFLAGS) \
 		$(DRIVER_LDFLAGS) \
+		-Wl,-Map='$(2).map' \
 		-o '$(2)' \
 		$(1) \
+		$(DRIVER_CRT) \
 		$(DRIVER_LIBS)
 	@echo 'LD  $(2)'
 endef
@@ -126,10 +136,11 @@ define LINK_CPP_KERNEL_TARGET
 		$(CXXFLAGS) \
 		$(EASTL_CXXFLAGS) \
 		$(DRIVER_LDFLAGS) \
+		-Wl,-Map='$(2).map' \
 		-o '$(2)' \
 		$(1) \
 		$(DRIVER_ADDITIONAL_OBJS) \
-		$(DRIVER_EASTL_COMPAT) \
+		$(DRIVER_CRTPLUSPLUS) \
 		$(EASTL_STATIC_LIB) \
 		$(DRIVER_LIBS)
 	@echo 'LD  $(2)'
@@ -146,7 +157,7 @@ define LINK_CPP_USER_TARGET
 		$(USER_LDFLAGS) \
 		-o '$(2)' \
 		$(1) \
-		$(USER_EASTL_COMPAT) \
+		$(USER_CRT) \
 		$(EASTL_STATIC_LIB)
 	@echo 'LD  $(2)'
 endef

@@ -13,9 +13,6 @@ NTSTATUS DriverEntry(
 
     DbgPrint("%s\n", "Hello ring0!");
 
-    /* support for service stopping */
-    DriverObject->DriverUnload = DriverUnload;
-
     return STATUS_SUCCESS;
 }
 

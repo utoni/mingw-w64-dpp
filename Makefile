@@ -51,9 +51,9 @@ distclean: clean
 
 clean:
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps clean
-	rm -f $(1_OBJECTS) $(1_TARGET)
-	rm -f $(2_OBJECTS) $(2_TARGET)
-	rm -f $(3_OBJECTS) $(3_TARGET)
+	rm -f $(1_OBJECTS) $(1_TARGET) $(1_TARGET).map
+	rm -f $(2_OBJECTS) $(2_TARGET) $(2_TARGET).map
+	rm -f $(3_OBJECTS) $(3_TARGET) $(3_TARGET).map
 
 .PHONY: all install distclean clean
 .DEFAULT_GOAL := all

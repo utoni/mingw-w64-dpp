@@ -67,19 +67,31 @@ install: $(DRIVER_TARGET)
     $(call INSTALL_EXEC_SIGN,$(DRIVER_TARGET))
 ```
 
-## Known issues
+## The CRT and CRT++
 
-Defining classes (by value, not pointer) with a static qualifier won't work because something seems broken with the static initialization of (non-primitive) globals.
-Meaning code `static MyClass test;` fails whereas `static MyClass * test = new MyClass();` will sill work.
+This project uses a very very rudimentary CRT for C and C++ projects.
+Please keep in mind that depending on what you want to do the CRT may lack features you are familiar with.
+Usually copy&pasting them from various online sources should be sufficient.
 
-The issue is related to `__static_initialization_and_destruction` as it does not call the appropriate ctor's and dtor's (pushing dtor's via `atexit()`).
-The latter one may be related to `-Wl,--subsystem,native` as in kernel space there is usually no need for calling `atexit()`.
-I've tried adding C++ initializers manually, but they did not survive linker optimizations. There may be custom linker script required to fix it.
+Remember: The CRT and CRT++ **sets a driver unload function** meaning that code .e.g.:
+
+```C
+NTSTATUS MyDriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
+{
+    DriverObject->DriverUnload = MyDriverUnload;
+}
+```
+
+shouldn't be used. Instead the function `DriverUnload` will be called.
+So make sure that the symbol `DriverUnload` exists and has the usual ddk function signature:
+`void DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)`.
+This is required to make ctors/dtors work without calling additional functions in `DriverEntry` / `DriverUnload`.
 
 ## Thanks!
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script
 - [sidyhe](https://github.com/sidyhe/dxx) for some copy paste ready CRT code ;)
+- [liupengs](https://github.com/liupengs/Mini-CRT) helped me to fix the ctor/dtor issue
 
 and last but not least:
 

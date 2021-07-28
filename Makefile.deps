@@ -46,8 +46,9 @@ deps-build: \
 	$(LOCAL_MINGW64_CC) \
 	$(EASTL_STATIC_LIB) \
 	$(DRIVER_ADDITIONAL_OBJS) \
-	$(DRIVER_EASTL_COMPAT) \
-	$(USER_EASTL_COMPAT) \
+	$(DRIVER_CRT) \
+	$(DRIVER_CRTPLUSPLUS) \
+	$(USER_CRT) \
 	$(SIGNTOOL_PREFIX)
 
 deps: deps-print-local-notice deps-build
@@ -73,7 +74,7 @@ distclean: clean
 	git submodule deinit --all
 
 clean:
-	rm -f $(DRIVER_EASTL_COMPAT) $(USER_EASTL_COMPAT) $(EASTL_STATIC_LIB)
+	rm -f $(DRIVER_CRT) $(DRIVER_CRTPLUSPLUS) $(USER_CRT) $(EASTL_STATIC_LIB)
 	rm -f $(DRIVER_ADDITIONAL_OBJS)
 	rm -rf EASTL-build
 

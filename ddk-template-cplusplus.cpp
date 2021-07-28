@@ -35,6 +35,29 @@ public:
     }
 };
 
+class DerivedWithCDtor : public Derived
+{
+public:
+    explicit DerivedWithCDtor(unsigned int value)
+    {
+        some_value = value;
+        DbgPrint("%s\n", "DerivedWithCDtor-Ctor.");
+    }
+    ~DerivedWithCDtor()
+    {
+        DbgPrint("%s\n", "DerivedWithCDtor-Dtor.");
+    }
+    void doSmth(void)
+    {
+        DbgPrint("SomeValue: %X\n", some_value);
+    }
+
+private:
+    unsigned int some_value = 0;
+};
+
+static DerivedWithCDtor some_static(0xDEADC0DE);
+
 struct threadContext
 {
     DriverThread::Semaphore sem;
@@ -70,6 +93,8 @@ static void test_cplusplus(void)
     ctx.dth.WaitForTermination();
     ctx.dth.WaitForTermination();
     DbgPrint("MainThread EOF\n");
+
+    some_static.doSmth();
 }
 
 extern "C"
@@ -85,9 +110,6 @@ extern "C"
 
         DbgPrint("%s\n", "Hello ring0!");
         cdtor_test = new TestSmth();
-
-        /* support for service stopping */
-        DriverObject->DriverUnload = DriverUnload;
 
         test_cplusplus();
 

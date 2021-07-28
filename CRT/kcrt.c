@@ -1,13 +1,29 @@
 /*
  * Shameless copy pasta from: https://github.com/sidyhe/dxx
+ * and: https://github.com/liupengs/Mini-CRT
+ * and some minor modifications.
  */
-
-#include <cstdio>
-#include <cstdlib>
 
 #include <ntddk.h>
 
 #define KCRT_POOL_DEFAULT_TAG 0xDEADBEEF
+
+extern void (*__CTOR_LIST__)();
+extern void (*__DTOR_LIST__)();
+extern NTSTATUS __cdecl DriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath);
+extern void __cdecl DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject);
+
+DRIVER_INITIALIZE __cdecl _CRT_DriverEntry;
+DRIVER_UNLOAD __cdecl _CRT_DriverUnload;
+
+typedef void (*__cdecl init_and_deinit_fn)(void);
+typedef void (*__cdecl atexit_func_t)(void);
+
+typedef struct _func_node
+{
+    atexit_func_t func;
+    struct _func_node * next;
+} func_node;
 
 typedef struct _MALLOC_HEADER
 {
@@ -16,6 +32,8 @@ typedef struct _MALLOC_HEADER
     ULONG_PTR Size;
 } MALLOC_HEADER, *PMALLOC_HEADER;
 C_ASSERT(sizeof(MALLOC_HEADER) % sizeof(void *) == 0);
+
+static func_node * atexit_list = NULL;
 
 // dynamic memory mgmt
 
@@ -40,6 +58,28 @@ ULONG_PTR GET_MALLOC_SIZE(PVOID ptr)
 }
 
 // c runtime
+
+static int register_atexit(atexit_func_t func)
+{
+    func_node * node;
+    if (!func)
+        return -1;
+
+    node = (func_node *)malloc(sizeof(func_node));
+
+    if (node == 0)
+        return -1;
+
+    node->func = func;
+    node->next = atexit_list;
+    atexit_list = node;
+    return 0;
+}
+
+int __cdecl atexit(atexit_func_t func)
+{
+    return register_atexit(func);
+}
 
 void __cdecl free(void * ptr)
 {
@@ -107,56 +147,13 @@ void * __cdecl realloc(void * ptr, size_t new_size)
     return NULL;
 }
 
-// new & delete
-
-void * __cdecl operator new(std::size_t size)
-{
-    return malloc(size);
-}
-
-void * __cdecl operator new[](size_t size)
-{
-    return malloc(size);
-}
-
-void __cdecl operator delete(void * ptr)
-{
-    free(ptr);
-}
-
-void __cdecl operator delete(void * ptr, size_t)
-{
-    free(ptr);
-}
-
-void __cdecl operator delete[](void * ptr, long long unsigned int)
-{
-    free(ptr);
-}
-
-void __cdecl operator delete[](void * ptr)
-{
-    free(ptr);
-}
-
-// EASTL
-
-void * operator new[](size_t size, const char *, int, unsigned, const char *, int)
-{
-    return malloc(size);
-}
-void * operator new[](size_t size, size_t, size_t, const char *, int, unsigned, const char *, int)
-{
-    return malloc(size);
-}
-
-extern "C" void __cxa_pure_virtual(void)
+void __cdecl __cxa_pure_virtual(void)
 {
     // definitly not perfect, but we get at least a notification
     while (1)
     {
         DbgPrint("Pure virtual function call..\n");
-        LARGE_INTEGER li = { .QuadPart = -10000000 };
+        LARGE_INTEGER li = {.QuadPart = -10000000};
         KeDelayExecutionThread(KernelMode, TRUE, &li);
     }
 }
@@ -182,7 +179,7 @@ extern "C" void __cxa_pure_virtual(void)
         }                                                                                                              \
     } while (0)
 
-extern "C" float ceilf(float x)
+float __cdecl ceilf(float x)
 {
     union {
         float f;
@@ -212,4 +209,65 @@ extern "C" float ceilf(float x)
             u.f = 1.0;
     }
     return u.f;
+}
+
+// functions called in DRIVER_INITIALIZE and DRIVER_UNLOAD
+
+static void __cdecl __ctors(void)
+{
+    unsigned long long int const * const * const l = (unsigned long long int const * const * const)&__CTOR_LIST__;
+    unsigned long long int i = (unsigned long long int)*l;
+    init_and_deinit_fn const * p;
+
+    if (i == (unsigned long long int)-1)
+    {
+        for (i = 1; l[i] != NULL; i++)
+            ;
+        i--;
+    }
+
+    p = (init_and_deinit_fn *)&l[i];
+
+    while (i--)
+    {
+        (**p--)();
+    }
+}
+
+static void __cdecl __dtors(void)
+{
+    func_node * p = atexit_list;
+    for (; p != NULL; p = p->next)
+    {
+        p->func();
+        free(p);
+    }
+    atexit_list = NULL;
+}
+
+void __cdecl KCRT_OnDriverEntry(void)
+{
+    __ctors();
+}
+
+void __cdecl KCRT_OnDriverUnload(void)
+{
+    __dtors();
+}
+
+void __cdecl _CRT_DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)
+{
+    DriverUnload(DriverObject);
+
+    KCRT_OnDriverUnload();
+}
+
+NTSTATUS __cdecl _CRT_DriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
+{
+    KCRT_OnDriverEntry();
+
+    /* support for service stopping and CRT de-init */
+    DriverObject->DriverUnload = _CRT_DriverUnload;
+
+    return DriverEntry(DriverObject, RegistryPath);
 }

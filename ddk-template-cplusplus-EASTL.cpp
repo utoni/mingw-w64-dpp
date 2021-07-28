@@ -107,9 +107,6 @@ extern "C"
 
         DbgPrint("%s\n", "Hello ring0!");
 
-        /* support for service stopping */
-        DriverObject->DriverUnload = DriverUnload;
-
         stl_test();
         more_stl_test();
 
