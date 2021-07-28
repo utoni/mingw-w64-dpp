@@ -264,10 +264,14 @@ void __cdecl _CRT_DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)
 
 NTSTATUS __cdecl _CRT_DriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
 {
+    NTSTATUS retval;
+
     KCRT_OnDriverEntry();
+
+    retval = DriverEntry(DriverObject, RegistryPath);
 
     /* support for service stopping and CRT de-init */
     DriverObject->DriverUnload = _CRT_DriverUnload;
 
-    return DriverEntry(DriverObject, RegistryPath);
+    return retval;
 }

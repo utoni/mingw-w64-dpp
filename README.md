@@ -82,8 +82,9 @@ NTSTATUS MyDriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_
 }
 ```
 
-shouldn't be used. Instead the function `DriverUnload` will be called.
-So make sure that the symbol `DriverUnload` exists and has the usual ddk function signature:
+**must not** used. Overwriting `DriverObject->DriverUnload` with your own function may BSOD.
+Instead the function `DriverUnload` will be called.
+Make sure that the symbol `DriverUnload` exists and has the usual ddk function signature:
 `void DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)`.
 This is required to make ctors/dtors work without calling additional functions in `DriverEntry` / `DriverUnload`.
 
