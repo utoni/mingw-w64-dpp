@@ -1,0 +1,66 @@
+image: debian:stable
+
+stages:
+  - deps
+  - build
+
+cache:
+  key: toolchain
+  paths:
+    - x86_64-w64-mingw32/
+
+before_script:
+  - export DEBIAN_FRONTEND=noninteractive
+  - apt-get update -qq
+  - >
+      apt-get install -y -qq \
+        coreutils wget tar gzip bzip2 patch cmake make binutils gcc g++ autoconf automake flex bison texinfo \
+        git subversion curl xz-utils osslsigncode
+
+makedeps:
+  script:
+    - if [ "x${FORCE_TOOLCHAIN_REBUILD:-}" != "x" ]; then rm -rf x86_64-w64-mingw32/; fi
+    - pwd
+    - >
+        { test -x x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc && \
+          test -x x86_64-w64-mingw32/bin/x86_64-w64-mingw32-g++; } || \
+        { make deps || cat bld/build.log; }
+  stage: deps
+  only:
+    - master
+
+makedeps-again:
+  script:
+    - git clean -df .
+    - git clean -dfX .
+    - git checkout .
+    - make deps || cat bld/build.log
+  stage: deps
+  only:
+    - master
+  when: manual
+  allow_failure: true
+
+build:
+  script:
+    - ls -alh x86_64-w64-mingw32/
+    - ls -alh x86_64-w64-mingw32/bin/
+    - pwd
+    - >
+        make all \
+        CC=x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc \
+        DDK_INCLUDE_DIR=x86_64-w64-mingw32/x86_64-w64-mingw32/include/ddk
+    - >
+        make install \
+        CC=x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc \
+        DDK_INCLUDE_DIR=x86_64-w64-mingw32/x86_64-w64-mingw32/include/ddk \
+        DESTDIR=_install/
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - _install/
+  stage: build
+  only:
+    - master
+  dependencies:
+    - makedeps

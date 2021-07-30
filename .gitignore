@@ -1,3 +1,4 @@
+/include
 /codesign-*
 /.deps-built
 /EASTL-build

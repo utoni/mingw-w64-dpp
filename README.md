@@ -1,3 +1,5 @@
+![Gitlab-CI](https://gitlab.com/lnslbrty/mingw-w64-ddk-template/badges/master/pipeline.svg "Gitlab-CI: master branch")
+
 # Mingw64 Driver Plus Plus
 
 A demonstration on how to compile Windows kernel drivers using Mingw64.

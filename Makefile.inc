@@ -6,7 +6,7 @@ Q = @
 ifeq ($(Q),)
 CMAKE_Q = VERBOSE=1
 endif
-DPP_ROOT ?= .
+DPP_ROOT = $(realpath .)
 LOCAL_MINGW64_BUILD_SCRIPT := $(DPP_ROOT)/mingw-w64-build/mingw-w64-build
 LOCAL_MINGW64_BUILD_DIR := $(DPP_ROOT)/x86_64-w64-mingw32
 LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
