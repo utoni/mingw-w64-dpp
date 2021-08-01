@@ -100,7 +100,7 @@ extern "C"
     DRIVER_INITIALIZE DriverEntry;
     DRIVER_UNLOAD DriverUnload;
 
-    NTSTATUS DriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
+    NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)
     {
         (void)DriverObject;
         (void)RegistryPath;
@@ -113,7 +113,7 @@ extern "C"
         return STATUS_SUCCESS;
     }
 
-    VOID DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)
+    VOID DriverUnload(PDRIVER_OBJECT DriverObject)
     {
         (void)DriverObject;
 

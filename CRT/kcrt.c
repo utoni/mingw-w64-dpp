@@ -10,8 +10,8 @@
 
 extern void (*__CTOR_LIST__)();
 extern void (*__DTOR_LIST__)();
-extern NTSTATUS __cdecl DriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath);
-extern void __cdecl DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject);
+extern NTSTATUS __cdecl DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE_STRING RegistryPath);
+extern void __cdecl DriverUnload(struct _DRIVER_OBJECT * DriverObject);
 
 DRIVER_INITIALIZE __cdecl _CRT_DriverEntry;
 DRIVER_UNLOAD __cdecl _CRT_DriverUnload;
@@ -255,14 +255,14 @@ void __cdecl KCRT_OnDriverUnload(void)
     __dtors();
 }
 
-void __cdecl _CRT_DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)
+void __cdecl _CRT_DriverUnload(struct _DRIVER_OBJECT * DriverObject)
 {
     DriverUnload(DriverObject);
 
     KCRT_OnDriverUnload();
 }
 
-NTSTATUS __cdecl _CRT_DriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
+NTSTATUS __cdecl _CRT_DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE_STRING RegistryPath)
 {
     NTSTATUS retval;
 

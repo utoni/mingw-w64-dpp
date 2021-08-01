@@ -3,10 +3,7 @@
 DRIVER_INITIALIZE DriverEntry;
 DRIVER_UNLOAD DriverUnload;
 
-NTSTATUS DriverEntry(
-	_In_  struct _DRIVER_OBJECT *DriverObject,
-	_In_  PUNICODE_STRING RegistryPath
-)
+NTSTATUS DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE_STRING RegistryPath)
 {
     (void)DriverObject;
     (void)RegistryPath;
@@ -16,10 +13,7 @@ NTSTATUS DriverEntry(
     return STATUS_SUCCESS;
 }
 
-VOID
-DriverUnload(
-    _In_ struct _DRIVER_OBJECT  *DriverObject
-)
+VOID DriverUnload(struct _DRIVER_OBJECT * DriverObject)
 {
     (void)DriverObject;
 

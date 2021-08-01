@@ -1,0 +1,23 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: ubuntu:latest
+    steps:
+      - checkout
+      - run: export DEBIAN_FRONTEND=noninteractive
+      - run: apt-get update -qq
+      - run: |
+          env DEBIAN_FRONTEND=noninteractive \
+          apt-get install -y -qq \
+          coreutils wget tar gzip bzip2 patch cmake make binutils gcc g++ autoconf automake flex bison texinfo \
+          git subversion curl xz-utils osslsigncode \
+          binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-x86-64-dev
+      - run: |
+          env DEBIAN_FRONTEND=noninteractive \
+          make install \
+          WERROR=1 Q= \
+          CC=/usr/bin/x86_64-w64-mingw32-gcc \
+          DDK_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include/ddk \
+          DESTDIR=_install/

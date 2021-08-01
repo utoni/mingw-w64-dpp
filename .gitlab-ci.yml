@@ -47,11 +47,11 @@ build:
     - ls -alh x86_64-w64-mingw32/bin/
     - pwd
     - >
-        make all \
+        make all WERROR=1 Q= \
         CC=x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc \
         DDK_INCLUDE_DIR=x86_64-w64-mingw32/x86_64-w64-mingw32/include/ddk
     - >
-        make install \
+        make install WERROR=1 Q= \
         CC=x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc \
         DDK_INCLUDE_DIR=x86_64-w64-mingw32/x86_64-w64-mingw32/include/ddk \
         DESTDIR=_install/

@@ -1,4 +1,5 @@
 ![Gitlab-CI](https://gitlab.com/lnslbrty/mingw-w64-ddk-template/badges/master/pipeline.svg "Gitlab-CI: master branch")
+![Circle-CI](https://circleci.com/gh/lnslbrty/mingw-w64-ddk-template.svg?style=shield "Circle-CI")
 
 # Mingw64 Driver Plus Plus
 
