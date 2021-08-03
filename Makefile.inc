@@ -18,7 +18,7 @@ CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
 CXX = $(dir $(CC))x86_64-w64-mingw32-g++
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
-CFLAGS := -Wall -Wextra -Wno-sign-compare \
+CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-m64 -fPIC -fvisibility=hidden \
 	-ffunction-sections -fdata-sections -fno-builtin -ffreestanding \
 	-I$(DPP_ROOT)/CRT -I$(DDK_INCLUDE_DIR) \
