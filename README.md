@@ -70,6 +70,13 @@ install: $(DRIVER_TARGET)
     $(call INSTALL_EXEC_SIGN,$(DRIVER_TARGET))
 ```
 
+You can also add the toolchain to your path and use it for other projects w/o any Makefile blueprint:
+
+```
+make
+source path/to/bin/mingw-w64-ddk-template/x86_64-w64-mingw32-gcc/bin/activate.sh
+```
+
 ## The CRT and CRT++
 
 This project uses a very very rudimentary CRT for C and C++ projects.

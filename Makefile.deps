@@ -1,4 +1,5 @@
 DPP_ROOT = .
+ACTIVATE_SH = ./x86_64-w64-mingw32/activate.sh
 include Makefile.inc
 
 all: deps
@@ -39,6 +40,11 @@ ifeq ($(CC),$(LOCAL_MINGW64_CC))
 	@echo "----------------------------------------------------------------------------------------"
 	@echo
 	env -i ./mingw-w64-build/mingw-w64-build x86_64
+	@echo '#!/usr/bin/env bash' >$(ACTIVATE_SH)
+	@echo >>$(ACTIVATE_SH)
+	@echo 'MYDIR="$$(realpath $$(dirname $${BASH_SOURCE[0]}))"' >>$(ACTIVATE_SH)
+	@echo 'export PATH="$${MYDIR}/x86_64-w64-mingw32/bin:$${MYDIR}/bin:${PATH}"' >>$(ACTIVATE_SH)
+	@chmod +x $(ACTIVATE_SH)
 endif
 
 deps-build: \
