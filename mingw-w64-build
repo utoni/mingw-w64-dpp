@@ -28,6 +28,11 @@ MINGW_W64_BRANCH="v9.x"
 BINUTILS_BRANCH="binutils-2_37-branch"
 GCC_BRANCH="releases/gcc-11"
 
+MINGW_W64_EXPECTED_COMMIT_HASH="acc9b9d9eb63a13d8122cbac4882eb5f4ee2f679"
+BINUTILS_EXPECTED_COMMIT_HASH="70cfd17bbd49b975807846926cedbfe9374a4953"
+GCC_EXPECTED_COMMIT_HASH="8f3a62529a644527a62b0f3b7df758dc9503bbbc"
+CONFIG_GUESS_EXPECTED_SHA512_HASH="8d5ab910acd2a795045c36703b5fc4cd6db0a5838ff980d0b62bd108e2cd8213519c6f2a754c49249346d78d4c9d2c8db4346895e02a9b4f5d7f42553c1a706c"
+
 ENABLE_THREADS="--enable-threads=posix"
 
 JOB_COUNT=$(($(getconf _NPROCESSORS_ONLN) + 2))
@@ -130,17 +135,39 @@ download_sources()
         git clone --depth 1 -b "$MINGW_W64_BRANCH" \
             https://git.code.sf.net/p/mingw-w64/mingw-w64 mingw-w64
 
+    change_dir "${SRC_PATH}/mingw-w64"
+    execute "Verify MinGW-w64 HEAD commit hash" \
+        "commit hash verification failed; new: $(git rev-parse HEAD)" \
+        test "$(git rev-parse --verify HEAD)" = "${MINGW_W64_EXPECTED_COMMIT_HASH}"
+    change_dir "$SRC_PATH"
+
     execute "downloading Binutils source" "" \
         git clone --depth 1 -b "$BINUTILS_BRANCH" \
             https://sourceware.org/git/binutils-gdb.git binutils
+
+    change_dir "${SRC_PATH}/binutils"
+    execute "Verify Binutils HEAD commit hash" \
+        "commit hash verification failed; new: $(git rev-parse HEAD)" \
+        test "$(git rev-parse --verify HEAD)" = "${BINUTILS_EXPECTED_COMMIT_HASH}"
+    change_dir "$SRC_PATH"
 
     execute "downloading GCC source" "" \
         git clone --depth 1 -b "$GCC_BRANCH" \
             https://gcc.gnu.org/git/gcc.git gcc
 
+    change_dir "${SRC_PATH}/gcc"
+    execute "Verify GCC HEAD commit hash" \
+        "commit hash verification failed; new: $(git rev-parse HEAD)" \
+        test "$(git rev-parse --verify HEAD)" = "${GCC_EXPECTED_COMMIT_HASH}"
+    change_dir "$SRC_PATH"
+
     execute "downloading config.guess" "" \
         curl -o config.guess \
             "https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD"
+    CONFIG_GUESS_SHA512_HASH="$(sha512sum config.guess | cut -d ' ' -f 1)"
+    execute "Verify config.guess SHA-512" \
+        "SHA-512 hash verification failed; new: ${CONFIG_GUESS_SHA512_HASH}" \
+        test "${CONFIG_GUESS_SHA512_HASH}" = "${CONFIG_GUESS_EXPECTED_SHA512_HASH}"
 }
 
 build()
@@ -349,7 +376,7 @@ if [ ! "$BUILD_I686" ] && [ ! "$BUILD_X86_64" ]; then
 fi
 
 MISSING_EXECS=""
-for exec in g++ flex bison git makeinfo m4 bzip2 curl make diff; do
+for exec in g++ flex bison git makeinfo m4 bzip2 curl make diff sha512sum cut test; do
     if ! command -v "$exec" >/dev/null; then
         MISSING_EXECS="$MISSING_EXECS $exec"
     fi
@@ -358,7 +385,7 @@ if [ "$MISSING_EXECS" ]; then
     error_exit "missing required executable(s):$MISSING_EXECS"
 fi
 
-TOTAL_STEPS=0
+TOTAL_STEPS=4
 
 if [ "$CACHED_SOURCES" ]; then
     if [ ! -f "$SRC_PATH/config.guess" ]; then
