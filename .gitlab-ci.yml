@@ -24,7 +24,7 @@ makedeps:
     - >
         { test -x x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc && \
           test -x x86_64-w64-mingw32/bin/x86_64-w64-mingw32-g++; } || \
-        { make deps || cat bld/build.log; }
+        { make deps || { cat bld/build.log; false; }; }
   stage: deps
   only:
     - master
@@ -34,12 +34,12 @@ makedeps-again:
     - git clean -df .
     - git clean -dfX .
     - git checkout .
-    - make deps || cat bld/build.log
+    - >
+        make deps || { cat bld/build.log; false; }
   stage: deps
   only:
     - master
   when: manual
-  allow_failure: true
 
 build:
   script:
