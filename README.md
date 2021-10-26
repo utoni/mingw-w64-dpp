@@ -1,3 +1,6 @@
+# mingw-w64-build-ng
+[Zeranoe](https://github.com/Zeranoe/mingw-w64-build)s build script with some extensioons rejected by the upstream.
+
 # mingw-w64-build
 mingw-w64-build is a Bash script to build a [MinGW-w64](https://mingw-w64.org)
 cross compiler for i686 (Win32) and x86_64 (Win64). It will build a fully static

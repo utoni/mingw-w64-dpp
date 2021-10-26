@@ -16,17 +16,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-ROOT_PATH="${ROOT_PATH:-$HOME/.zeranoe/mingw-w64}"
-ROOT_PATH="$(realpath ${ROOT_PATH})"
-SRC_PATH="$ROOT_PATH/src"
-BLD_PATH="$ROOT_PATH/bld"
-LOG_FILE="$ROOT_PATH/build.log"
-I686_PREFIX="$ROOT_PATH/i686"
-X86_64_PREFIX="$ROOT_PATH/x86_64"
+ROOT_PATH="$HOME/.mingw-w64-build-ng"
 
 MINGW_W64_BRANCH="v9.x"
 BINUTILS_BRANCH="binutils-2_37-branch"
 GCC_BRANCH="releases/gcc-11"
+
+ENABLE_MINGW_W64_CHECKSUM_TEST=1
+ENABLE_BINUTILS_CHECKSUM_TEST=1
+ENABLE_GCC_CHECKSUM_TEST=1
 
 MINGW_W64_EXPECTED_COMMIT_HASH="acc9b9d9eb63a13d8122cbac4882eb5f4ee2f679"
 BINUTILS_EXPECTED_COMMIT_HASH="70cfd17bbd49b975807846926cedbfe9374a4953"
@@ -48,15 +46,16 @@ Archs:
   x86_64  Windows 64-bit
 
 Options:
-  -h, --help                   show help
-  -j <count>, --jobs <count>   override make job count (default: $JOB_COUNT)
-  -p <path>, --prefix <path>   install location (default: $ROOT_PATH/<arch>)
-  --keep-artifacts             don't remove source and build files after a successful build
-  --disable-threads            disable pthreads and STL <thread>
-  --cached-sources             use existing sources instead of downloading new ones
-  --binutils-branch <branch>   set Binutils branch (default: $BINUTILS_BRANCH)
-  --gcc-branch <branch>        set GCC branch (default: $GCC_BRANCH)
-  --mingw-w64-branch <branch>  set MinGW-w64 branch (default: $MINGW_W64_BRANCH)
+  -h, --help                    show help
+  -j <count>, --jobs <count>    override make job count (default: $JOB_COUNT)
+  -p <path>, --prefix <path>    install location (default: $ROOT_PATH/<arch>)
+  -r <path>, --root-path <path> set the toolchain install path (default: $ROOT_PATH)
+  --keep-artifacts              don't remove source and build files after a successful build
+  --disable-threads             disable pthreads and STL <thread>
+  --cached-sources              use existing sources instead of downloading new ones
+  --binutils-branch <branch>    set Binutils branch (default: $BINUTILS_BRANCH)
+  --gcc-branch <branch>         set GCC branch (default: $GCC_BRANCH)
+  --mingw-w64-branch <branch>   set MinGW-w64 branch (default: $MINGW_W64_BRANCH)
 EOF
 }
 
@@ -135,35 +134,42 @@ download_sources()
         git clone --depth 1 -b "$MINGW_W64_BRANCH" \
             https://git.code.sf.net/p/mingw-w64/mingw-w64 mingw-w64
 
-    change_dir "${SRC_PATH}/mingw-w64"
-    execute "Verify MinGW-w64 HEAD commit hash" \
-        "commit hash verification failed; new: $(git rev-parse HEAD)" \
-        test "$(git rev-parse --verify HEAD)" = "${MINGW_W64_EXPECTED_COMMIT_HASH}"
-    change_dir "$SRC_PATH"
+    if [ ${ENABLE_MINGW_W64_CHECKSUM_TEST} -ne 0 ]; then
+        change_dir "${SRC_PATH}/mingw-w64"
+        execute "Verify MinGW-w64 HEAD commit hash" \
+            "commit hash verification failed; new: $(git rev-parse HEAD)" \
+            test "$(git rev-parse --verify HEAD)" = "${MINGW_W64_EXPECTED_COMMIT_HASH}"
+        change_dir "$SRC_PATH"
+    fi
 
     execute "downloading Binutils source" "" \
         git clone --depth 1 -b "$BINUTILS_BRANCH" \
             https://sourceware.org/git/binutils-gdb.git binutils
 
-    change_dir "${SRC_PATH}/binutils"
-    execute "Verify Binutils HEAD commit hash" \
-        "commit hash verification failed; new: $(git rev-parse HEAD)" \
-        test "$(git rev-parse --verify HEAD)" = "${BINUTILS_EXPECTED_COMMIT_HASH}"
-    change_dir "$SRC_PATH"
+    if [ ${ENABLE_BINUTILS_CHECKSUM_TEST} -ne 0 ]; then
+        change_dir "${SRC_PATH}/binutils"
+        execute "Verify Binutils HEAD commit hash" \
+            "commit hash verification failed; new: $(git rev-parse HEAD)" \
+            test "$(git rev-parse --verify HEAD)" = "${BINUTILS_EXPECTED_COMMIT_HASH}"
+        change_dir "$SRC_PATH"
+    fi
 
     execute "downloading GCC source" "" \
         git clone --depth 1 -b "$GCC_BRANCH" \
             https://gcc.gnu.org/git/gcc.git gcc
 
-    change_dir "${SRC_PATH}/gcc"
-    execute "Verify GCC HEAD commit hash" \
-        "commit hash verification failed; new: $(git rev-parse HEAD)" \
-        test "$(git rev-parse --verify HEAD)" = "${GCC_EXPECTED_COMMIT_HASH}"
-    change_dir "$SRC_PATH"
+    if [ ${ENABLE_GCC_CHECKSUM_TEST} -ne 0 ]; then
+        change_dir "${SRC_PATH}/gcc"
+        execute "Verify GCC HEAD commit hash" \
+            "commit hash verification failed; new: $(git rev-parse HEAD)" \
+            test "$(git rev-parse --verify HEAD)" = "${GCC_EXPECTED_COMMIT_HASH}"
+        change_dir "$SRC_PATH"
+    fi
 
     execute "downloading config.guess" "" \
         curl -o config.guess \
             "https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD"
+
     CONFIG_GUESS_SHA512_HASH="$(sha512sum config.guess | cut -d ' ' -f 1)"
     execute "Verify config.guess SHA-512" \
         "SHA-512 hash verification failed; new: ${CONFIG_GUESS_SHA512_HASH}" \
@@ -297,6 +303,20 @@ while :; do
         --prefix=)
             arg_error "'--prefix' requires a non-empty option argument"
             ;;
+        -r|--root-path)
+            if [ "$2" ]; then
+                ROOT_PATH="$(realpath $2)"
+                shift
+            else
+                arg_error "'--root-path' requires a non-empty option argument"
+            fi
+            ;;
+        --root-path=?*)
+            ROOT_PATH="$(realpath ${1#*=})"
+            ;;
+        --root-path=)
+            arg_error "'--root-path' requires a non-empty option argument"
+            ;;
         --keep-artifacts)
             KEEP_ARTIFACTS=1
             ;;
@@ -313,12 +333,15 @@ while :; do
             else
                 arg_error "'--binutils-branch' requires a non-empty option argument"
             fi
+            ENABLE_BINUTILS_CHECKSUM_TEST=0
             ;;
         --binutils-branch=?*)
             BINUTILS_BRANCH=${1#*=}
+            ENABLE_BINUTILS_CHECKSUM_TEST=0
             ;;
         --binutils-branch=)
             arg_error "'--binutils-branch' requires a non-empty option argument"
+            ENABLE_BINUTILS_CHECKSUM_TEST=0
             ;;
         --gcc-branch)
             if [ "$2" ]; then
@@ -327,12 +350,15 @@ while :; do
             else
                 arg_error "'--gcc-branch' requires a non-empty option argument"
             fi
+            ENABLE_GCC_CHECKSUM_TEST=0
             ;;
         --gcc-branch=?*)
             GCC_BRANCH=${1#*=}
+            ENABLE_GCC_CHECKSUM_TEST=0
             ;;
         --gcc-branch=)
             arg_error "'--gcc-branch' requires a non-empty option argument"
+            ENABLE_GCC_CHECKSUM_TEST=0
             ;;
         --mingw-w64-branch)
             if [ "$2" ]; then
@@ -341,12 +367,15 @@ while :; do
             else
                 arg_error "'--mingw-w64-branch' requires a non-empty option argument"
             fi
+            ENABLE_MINGW_W64_CHECKSUM_TEST=0
             ;;
         --mingw-w64-branch=?*)
             MINGW_W64_BRANCH=${1#*=}
+            ENABLE_MINGW_W64_CHECKSUM_TEST=0
             ;;
         --mingw-w64-branch=)
             arg_error "'--mingw-w64-branch' requires a non-empty option argument"
+            ENABLE_MINGW_W64_CHECKSUM_TEST=0
             ;;
         i686)
             BUILD_I686=1
@@ -371,6 +400,12 @@ while :; do
     shift
 done
 
+SRC_PATH="$ROOT_PATH/src"
+BLD_PATH="$ROOT_PATH/bld"
+LOG_FILE="$ROOT_PATH/build.log"
+I686_PREFIX="$ROOT_PATH/i686"
+X86_64_PREFIX="$ROOT_PATH/x86_64"
+
 if [ ! "$BUILD_I686" ] && [ ! "$BUILD_X86_64" ]; then
     arg_error "no ARCH was specified"
 fi
@@ -385,7 +420,19 @@ if [ "$MISSING_EXECS" ]; then
     error_exit "missing required executable(s):$MISSING_EXECS"
 fi
 
-TOTAL_STEPS=4
+TOTAL_STEPS=1
+
+if [ "${ENABLE_BINUTILS_CHECKSUM_TEST}" -ne 0 ]; then
+    TOTAL_STEPS=$((TOTAL_STEPS + 1))
+fi
+
+if [ "${ENABLE_GCC_CHECKSUM_TEST}" -ne 0 ]; then
+    TOTAL_STEPS=$((TOTAL_STEPS + 1))
+fi
+
+if [ "${ENABLE_MINGW_W64_CHECKSUM_TEST}" -ne 0 ]; then
+    TOTAL_STEPS=$((TOTAL_STEPS + 1))
+fi
 
 if [ "$CACHED_SOURCES" ]; then
     if [ ! -f "$SRC_PATH/config.guess" ]; then
