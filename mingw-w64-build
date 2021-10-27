@@ -22,14 +22,16 @@ MINGW_W64_BRANCH="v9.x"
 BINUTILS_BRANCH="binutils-2_37-branch"
 GCC_BRANCH="releases/gcc-11"
 
-ENABLE_MINGW_W64_CHECKSUM_TEST=1
-ENABLE_BINUTILS_CHECKSUM_TEST=1
-ENABLE_GCC_CHECKSUM_TEST=1
+USE_TARBALL_RELEASES=1
 
-MINGW_W64_EXPECTED_COMMIT_HASH="acc9b9d9eb63a13d8122cbac4882eb5f4ee2f679"
-BINUTILS_EXPECTED_COMMIT_HASH="70cfd17bbd49b975807846926cedbfe9374a4953"
-GCC_EXPECTED_COMMIT_HASH="8f3a62529a644527a62b0f3b7df758dc9503bbbc"
-CONFIG_GUESS_EXPECTED_SHA512_HASH="8d5ab910acd2a795045c36703b5fc4cd6db0a5838ff980d0b62bd108e2cd8213519c6f2a754c49249346d78d4c9d2c8db4346895e02a9b4f5d7f42553c1a706c"
+MINGW_W64_TARBALL_VERSION="v9.0.0"
+BINUTILS_TARBALL_VERSION="2.37"
+GCC_TARBALL_VERSION="11.2.0"
+
+MINGW_W64_TARBALL_SHA512="e5726eff24326dd8997c21e0ea3069fc6b8e2b29ba40648f7c0c8b52980d02b96b13d8c00dfa91b16fcd311d1fb83ec879cf2ce57249b7f5069e4af7b93b872a"
+BINUTILS_TARBALL_SHA512="344968dd0b49eb54e3c67f9e36c7164d78a24bd4274b7656f71de9cf3fe5cff8278c43a35655f74d85ee76b469639fdcb39d9764b489450887b7529df0a3a730"
+GCC_TARBALL_SHA512="155535da34c74467e5d041fc6a79f5f102c30a7808b929a880dc33baae48e706089c8db20b2e30d49f4857c4a65f4e8e8f5a9d121d53facfeb5758d316c76c4d"
+CONFIG_GUESS_EXPECTED_SHA512="8d5ab910acd2a795045c36703b5fc4cd6db0a5838ff980d0b62bd108e2cd8213519c6f2a754c49249346d78d4c9d2c8db4346895e02a9b4f5d7f42553c1a706c"
 
 ENABLE_THREADS="--enable-threads=posix"
 
@@ -53,9 +55,10 @@ Options:
   --keep-artifacts              don't remove source and build files after a successful build
   --disable-threads             disable pthreads and STL <thread>
   --cached-sources              use existing sources instead of downloading new ones
-  --binutils-branch <branch>    set Binutils branch (default: $BINUTILS_BRANCH)
-  --gcc-branch <branch>         set GCC branch (default: $GCC_BRANCH)
-  --mingw-w64-branch <branch>   set MinGW-w64 branch (default: $MINGW_W64_BRANCH)
+  --binutils-branch <branch>    NOT RECOMMENDED - set Binutils branch (default: $BINUTILS_BRANCH)
+  --gcc-branch <branch>         NOT RECOMMENDED - set GCC branch (default: $GCC_BRANCH)
+  --mingw-w64-branch <branch>   NOT RECOMMENDED - set MinGW-w64 branch (default: $MINGW_W64_BRANCH)
+  --force-git                   NOT RECOMMENDED - force git clone (default: disabled)
 EOF
 }
 
@@ -130,50 +133,68 @@ download_sources()
     create_dir "$SRC_PATH"
     change_dir "$SRC_PATH"
 
-    execute "downloading MinGW-w64 source" "" \
-        git clone --depth 1 -b "$MINGW_W64_BRANCH" \
-            https://git.code.sf.net/p/mingw-w64/mingw-w64 mingw-w64
+    if [ ${USE_TARBALL_RELEASES} -eq 0 ]; then
+        execute "downloading MinGW-w64 source (GIT+HTTPS)" "" \
+            git clone --depth 1 -b "$MINGW_W64_BRANCH" \
+                "https://git.code.sf.net/p/mingw-w64/mingw-w64" mingw-w64
+    else
+        execute "downloading MinGW-w64 source (TAR+HTTPS)" "" \
+            curl -o mingw-w64.tar.gz \
+                "https://codeload.github.com/mirror/mingw-w64/tar.gz/refs/tags/${MINGW_W64_TARBALL_VERSION}"
 
-    if [ ${ENABLE_MINGW_W64_CHECKSUM_TEST} -ne 0 ]; then
-        change_dir "${SRC_PATH}/mingw-w64"
-        execute "Verify MinGW-w64 HEAD commit hash" \
-            "commit hash verification failed; new: $(git rev-parse HEAD)" \
-            test "$(git rev-parse --verify HEAD)" = "${MINGW_W64_EXPECTED_COMMIT_HASH}"
-        change_dir "$SRC_PATH"
+        MINGW_W64_sha512sum="$(sha512sum mingw-w64.tar.gz | cut -d ' ' -f 1)"
+        execute "verify MinGW-w64 SHA-512" \
+            "Hash verification failed; new: ${MINGW_W64_sha512sum}" \
+            test "${MINGW_W64_sha512sum}" = "${MINGW_W64_TARBALL_SHA512}"
+
+        execute "extract MinGW-w64 tarball" "" \
+            tar -xzf mingw-w64.tar.gz --one-top-level=mingw-w64/ --strip-components=1
     fi
 
-    execute "downloading Binutils source" "" \
-        git clone --depth 1 -b "$BINUTILS_BRANCH" \
-            https://sourceware.org/git/binutils-gdb.git binutils
+    if [ ${USE_TARBALL_RELEASES} -eq 0 ]; then
+        execute "downloading Binutils source (GIT+HTTPS)" "" \
+            git clone --depth 1 -b "$BINUTILS_BRANCH" \
+                "https://sourceware.org/git/binutils-gdb.git" binutils
+    else
+        execute "downloading Binutils source (TAR+HTTPS)" "" \
+            curl -o binutils.tar.gz \
+                "https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_TARBALL_VERSION}.tar.gz"
 
-    if [ ${ENABLE_BINUTILS_CHECKSUM_TEST} -ne 0 ]; then
-        change_dir "${SRC_PATH}/binutils"
-        execute "Verify Binutils HEAD commit hash" \
-            "commit hash verification failed; new: $(git rev-parse HEAD)" \
-            test "$(git rev-parse --verify HEAD)" = "${BINUTILS_EXPECTED_COMMIT_HASH}"
-        change_dir "$SRC_PATH"
+        BINUTILS_sha512sum="$(sha512sum binutils.tar.gz | cut -d ' ' -f 1)"
+        execute "verify Binutils SHA-512" \
+            "Hash verification failed; new: ${BINUTILS_sha512sum}" \
+            test "${BINUTILS_sha512sum}" = "${BINUTILS_TARBALL_SHA512}"
+
+        execute "extract Binutils tarball" "" \
+            tar -xzf binutils.tar.gz --one-top-level=binutils/ --strip-components=1
     fi
 
-    execute "downloading GCC source" "" \
-        git clone --depth 1 -b "$GCC_BRANCH" \
-            https://gcc.gnu.org/git/gcc.git gcc
+    if [ ${USE_TARBALL_RELEASES} -eq 0 ]; then
+        execute "downloading GCC source (GIT+HTTPS)" "" \
+            git clone --depth 1 -b "$GCC_BRANCH" \
+                "https://gcc.gnu.org/git/gcc.git" gcc
+    else
+        execute "downloading GCC source (TAR+HTTPS)" "" \
+            curl -o gcc.tar.gz \
+                "https://codeload.github.com/gcc-mirror/gcc/tar.gz/refs/tags/releases/gcc-${GCC_TARBALL_VERSION}"
 
-    if [ ${ENABLE_GCC_CHECKSUM_TEST} -ne 0 ]; then
-        change_dir "${SRC_PATH}/gcc"
-        execute "Verify GCC HEAD commit hash" \
-            "commit hash verification failed; new: $(git rev-parse HEAD)" \
-            test "$(git rev-parse --verify HEAD)" = "${GCC_EXPECTED_COMMIT_HASH}"
-        change_dir "$SRC_PATH"
+        GCC_sha512sum="$(sha512sum gcc.tar.gz | cut -d ' ' -f 1)"
+        execute "verify GCC SHA-512" \
+            "Hash verification failed; new: ${GCC_sha512sum}" \
+            test "${GCC_sha512sum}" = "${GCC_TARBALL_SHA512}"
+
+        execute "extract GCC tarball" "" \
+            tar -xzf gcc.tar.gz --one-top-level=gcc/ --strip-components=1
     fi
 
     execute "downloading config.guess" "" \
         curl -o config.guess \
             "https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD"
 
-    CONFIG_GUESS_SHA512_HASH="$(sha512sum config.guess | cut -d ' ' -f 1)"
-    execute "Verify config.guess SHA-512" \
-        "SHA-512 hash verification failed; new: ${CONFIG_GUESS_SHA512_HASH}" \
-        test "${CONFIG_GUESS_SHA512_HASH}" = "${CONFIG_GUESS_EXPECTED_SHA512_HASH}"
+    CONFIG_GUESS_sha512sum="$(sha512sum config.guess | cut -d ' ' -f 1)"
+    execute "verify config.guess SHA-512" \
+        "SHA-512 hash verification failed; new: ${CONFIG_GUESS_sha512sum}" \
+        test "${CONFIG_GUESS_sha512sum}" = "${CONFIG_GUESS_EXPECTED_SHA512}"
 }
 
 build()
@@ -327,55 +348,55 @@ while :; do
             CACHED_SOURCES=1
             ;;
         --binutils-branch)
+            USE_TARBALL_RELEASES=0
             if [ "$2" ]; then
                 BINUTILS_BRANCH="$2"
                 shift
             else
                 arg_error "'--binutils-branch' requires a non-empty option argument"
             fi
-            ENABLE_BINUTILS_CHECKSUM_TEST=0
             ;;
         --binutils-branch=?*)
+            USE_TARBALL_RELEASES=0
             BINUTILS_BRANCH=${1#*=}
-            ENABLE_BINUTILS_CHECKSUM_TEST=0
             ;;
         --binutils-branch=)
             arg_error "'--binutils-branch' requires a non-empty option argument"
-            ENABLE_BINUTILS_CHECKSUM_TEST=0
             ;;
         --gcc-branch)
+            USE_TARBALL_RELEASES=0
             if [ "$2" ]; then
                 GCC_BRANCH="$2"
                 shift
             else
                 arg_error "'--gcc-branch' requires a non-empty option argument"
             fi
-            ENABLE_GCC_CHECKSUM_TEST=0
             ;;
         --gcc-branch=?*)
+            USE_TARBALL_RELEASES=0
             GCC_BRANCH=${1#*=}
-            ENABLE_GCC_CHECKSUM_TEST=0
             ;;
         --gcc-branch=)
             arg_error "'--gcc-branch' requires a non-empty option argument"
-            ENABLE_GCC_CHECKSUM_TEST=0
             ;;
         --mingw-w64-branch)
+            USE_TARBALL_RELEASES=0
             if [ "$2" ]; then
                 MINGW_W64_BRANCH="$2"
                 shift
             else
                 arg_error "'--mingw-w64-branch' requires a non-empty option argument"
             fi
-            ENABLE_MINGW_W64_CHECKSUM_TEST=0
             ;;
         --mingw-w64-branch=?*)
+            USE_TARBALL_RELEASES=0
             MINGW_W64_BRANCH=${1#*=}
-            ENABLE_MINGW_W64_CHECKSUM_TEST=0
             ;;
         --mingw-w64-branch=)
             arg_error "'--mingw-w64-branch' requires a non-empty option argument"
-            ENABLE_MINGW_W64_CHECKSUM_TEST=0
+            ;;
+        --force-git)
+            USE_TARBALL_RELEASES=0
             ;;
         i686)
             BUILD_I686=1
@@ -422,16 +443,8 @@ fi
 
 TOTAL_STEPS=1
 
-if [ "${ENABLE_BINUTILS_CHECKSUM_TEST}" -ne 0 ]; then
-    TOTAL_STEPS=$((TOTAL_STEPS + 1))
-fi
-
-if [ "${ENABLE_GCC_CHECKSUM_TEST}" -ne 0 ]; then
-    TOTAL_STEPS=$((TOTAL_STEPS + 1))
-fi
-
-if [ "${ENABLE_MINGW_W64_CHECKSUM_TEST}" -ne 0 ]; then
-    TOTAL_STEPS=$((TOTAL_STEPS + 1))
+if [ "${USE_TARBALL_RELEASES}" -ne 0 ]; then
+    TOTAL_STEPS=$((TOTAL_STEPS + 6))
 fi
 
 if [ "$CACHED_SOURCES" ]; then
