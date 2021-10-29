@@ -48,17 +48,17 @@ Archs:
   x86_64  Windows 64-bit
 
 Options:
-  -h, --help                    show help
-  -j <count>, --jobs <count>    override make job count (default: $JOB_COUNT)
-  -p <path>, --prefix <path>    install location (default: $ROOT_PATH/<arch>)
-  -r <path>, --root-path <path> set the toolchain install path (default: $ROOT_PATH)
-  --keep-artifacts              don't remove source and build files after a successful build
-  --disable-threads             disable pthreads and STL <thread>
-  --cached-sources              use existing sources instead of downloading new ones
-  --binutils-branch <branch>    NOT RECOMMENDED - set Binutils branch (default: $BINUTILS_BRANCH)
-  --gcc-branch <branch>         NOT RECOMMENDED - set GCC branch (default: $GCC_BRANCH)
-  --mingw-w64-branch <branch>   NOT RECOMMENDED - set MinGW-w64 branch (default: $MINGW_W64_BRANCH)
-  --force-git                   NOT RECOMMENDED - force git clone (default: disabled)
+  -h, --help                   show help
+  -j <count>, --jobs <count>   override make job count (default: $JOB_COUNT)
+  -p <path>, --prefix <path>   install location (default: $ROOT_PATH/<arch>)
+  -r <path>, --root <path>     location for sources, build artifacts and the resulting compiler (default: $ROOT_PATH)
+  --keep-artifacts             don't remove source and build files after a successful build
+  --disable-threads            disable pthreads and STL <thread>
+  --cached-sources             use existing sources instead of downloading new ones
+  --binutils-branch <branch>   NOT RECOMMENDED - set Binutils branch (default: $BINUTILS_BRANCH)
+  --gcc-branch <branch>        NOT RECOMMENDED - set GCC branch (default: $GCC_BRANCH)
+  --mingw-w64-branch <branch>  NOT RECOMMENDED - set MinGW-w64 branch (default: $MINGW_W64_BRANCH)
+  --force-git                  NOT RECOMMENDED - force git clone (default: disabled)
 EOF
 }
 
@@ -324,19 +324,19 @@ while :; do
         --prefix=)
             arg_error "'--prefix' requires a non-empty option argument"
             ;;
-        -r|--root-path)
+        -r|--root)
             if [ "$2" ]; then
-                ROOT_PATH="$(realpath $2)"
+                ROOT_PATH=$(realpath "$2")
                 shift
             else
-                arg_error "'--root-path' requires a non-empty option argument"
+                arg_error "'--root' requires a non-empty option argument"
             fi
             ;;
-        --root-path=?*)
-            ROOT_PATH="$(realpath ${1#*=})"
+        --root=?*)
+            ROOT_PATH=$(realpath "${1#*=}")
             ;;
-        --root-path=)
-            arg_error "'--root-path' requires a non-empty option argument"
+        --root=)
+            arg_error "'--root' requires a non-empty option argument"
             ;;
         --keep-artifacts)
             KEEP_ARTIFACTS=1
