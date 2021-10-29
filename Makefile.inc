@@ -2,21 +2,30 @@ ifndef DPP_ROOT
 $(error DPP_ROOT is undefined)
 endif
 
+ifdef BUILD_NATIVE
+$(error BUILD_NATIVE is defined, include Makefile.native.inc)
+endif
+
+NAME_SUFFIX :=
+
 Q = @
 ifeq ($(Q),)
 CMAKE_Q = VERBOSE=1
 endif
 DPP_ROOT = $(realpath .)
 LOCAL_MINGW64_BUILD_SCRIPT := $(DPP_ROOT)/mingw-w64-build/mingw-w64-build
-LOCAL_MINGW64_BUILD_DIR := $(DPP_ROOT)/x86_64-w64-mingw32
+LOCAL_MINGW64_BUILD_DIR := $(DPP_ROOT)/w64-mingw32-sysroot/x86_64
 LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
+LOCAL_MINGW64_CXX := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-g++
 SIGNTOOL := osslsigncode
 SIGNTOOL_PREFIX := codesign
+
+DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX)
 
 INSTALL = install
 CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
-CXX = $(dir $(CC))x86_64-w64-mingw32-g++
+CXX = $(LOCAL_MINGW64_CXX)
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-m64 -fPIC -fvisibility=hidden \
@@ -24,9 +33,11 @@ CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-I$(DPP_ROOT)/CRT -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset
+
 ifneq ($(WERROR),)
 CFLAGS += -Werror
 endif
+
 CXXFLAGS := -fno-exceptions -fno-rtti -fuse-cxa-atexit
 EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/EABase/include/Common \
 	-DEASTL_THREAD_SUPPORT_AVAILABLE=0 \
@@ -51,19 +62,20 @@ DRIVER_LIBS := -lntoskrnl -lhal
 USER_LDFLAGS := -Wl,--dynamicbase -Wl,--nxcompat -Wl,--gc-sections
 
 DRIVER_ADDITIONAL_DEPS := $(DPP_ROOT)/CRT/DriverThread.cpp $(DPP_ROOT)/CRT/DriverThread.hpp
-DRIVER_ADDITIONAL_OBJS := $(DPP_ROOT)/CRT/DriverThread.opp
+DRIVER_ADDITIONAL_OBJS := $(DPP_ROOT)/CRT/DriverThread$(NAME_SUFFIX).opp
 
 EASTL_DEPS := $(wildcard $(DPP_ROOT)/EASTL/source/*.cpp) $(wildcard $(DPP_ROOT)/EASTL/include/EASTL/*.h)
-EASTL_STATIC_LIB := $(DPP_ROOT)/EASTL-build/libEASTL.a
+EASTL_BUILDDIR := EASTL-build
+EASTL_STATIC_LIB := $(DPP_ROOT)/$(EASTL_BUILDDIR)/libEASTL.a
 
 DRIVER_CRT_DEPS := $(DPP_ROOT)/CRT/kcrt.c
-DRIVER_CRT := $(DPP_ROOT)/CRT/kcrt.o
+DRIVER_CRT := $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o
 
 DRIVER_CRTPLUSPLUS_DEPS := $(DPP_ROOT)/CRT/kcrt.cpp $(DPP_ROOT)/CRT/kcrt.c
-DRIVER_CRTPLUSPLUS := $(DPP_ROOT)/CRT/kcrt.opp $(DPP_ROOT)/CRT/kcrt.o
+DRIVER_CRTPLUSPLUS := $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).opp $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o
 
 USER_CRT_DEPS := $(DPP_ROOT)/CRT/ucrt.cpp
-USER_CRT := $(DPP_ROOT)/CRT/ucrt.opp
+USER_CRT := $(DPP_ROOT)/CRT/ucrt$(NAME_SUFFIX).opp
 
 is_set = \
 	$(if $1,, \
@@ -71,7 +83,7 @@ is_set = \
 
 path_exists = \
 	$(if $(realpath $1),, \
-	$(error ERROR: $1 does not exist, run `make -C $(DPP_ROOT) deps` first.))
+	$(error ERROR: $1 does not exist, run `make -C $(DPP_ROOT) -f Makefile.deps` first.))
 
 define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(CC))
@@ -189,8 +201,4 @@ define INSTALL_EXEC_SIGN
 			-out "$(DESTDIR)/$$target"; \
 	done
 	$(INSTALL) "$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-ca-cert.pem" '$(DESTDIR)/$(SIGNTOOL_PREFIX)-ca-cert.crt'
-endef
-
-define CHECK_DPP
-	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps all
 endef

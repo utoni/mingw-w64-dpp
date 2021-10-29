@@ -1,7 +1,9 @@
 /include
 /codesign-*
-/.deps-built
-/EASTL-build
-/x86_64-w64-mingw32
-*.o
-*.opp
+/EASTL-build/
+/EASTL-native-build/
+/w64-mingw32-sysroot/
+/*.o
+/*.opp
+/CRT/*.o
+/CRT/*.opp

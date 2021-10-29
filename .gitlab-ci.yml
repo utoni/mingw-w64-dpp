@@ -7,7 +7,7 @@ stages:
 cache:
   key: toolchain
   paths:
-    - x86_64-w64-mingw32/
+    - w64-mingw32-sysroot/
 
 before_script:
   - export DEBIAN_FRONTEND=noninteractive
@@ -19,12 +19,12 @@ before_script:
 
 makedeps:
   script:
-    - if [ "x${FORCE_TOOLCHAIN_REBUILD:-}" != "x" ]; then rm -rf x86_64-w64-mingw32/; fi
+    - if [ "x${FORCE_TOOLCHAIN_REBUILD:-}" != "x" ]; then rm -rf w64-mingw32-sysroot/; fi
     - pwd
     - >
-        { test -x x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc && \
-          test -x x86_64-w64-mingw32/bin/x86_64-w64-mingw32-g++; } || \
-        { make deps || { cat bld/build.log; false; }; }
+        { test -x w64-mingw32-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc && \
+          test -x w64-mingw32-sysroot/x86_64/bin/x86_64-w64-mingw32-g++; } || \
+        { make -C . -f Makefile.deps -j "${BUILDJOBS:-4}" || { cat bld/build.log; false; }; }
   stage: deps
   only:
     - master
@@ -34,8 +34,7 @@ makedeps-again:
     - git clean -df .
     - git clean -dfX .
     - git checkout .
-    - >
-        make deps || { cat bld/build.log; false; }
+    - make -C . -f Makefile.deps -j "${BUILDJOBS:-4}" || { cat bld/build.log; false; }
   stage: deps
   only:
     - master
@@ -43,18 +42,16 @@ makedeps-again:
 
 build:
   script:
-    - ls -alh x86_64-w64-mingw32/
-    - ls -alh x86_64-w64-mingw32/bin/
+    - ls -alh w64-mingw32-sysroot/x86_64/
+    - ls -alh w64-mingw32-sysroot/x86_64/bin/
     - pwd
-    - >
-        make all WERROR=1 Q= \
-        CC=x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc \
-        DDK_INCLUDE_DIR=x86_64-w64-mingw32/x86_64-w64-mingw32/include/ddk
-    - >
-        make install WERROR=1 Q= \
-        CC=x86_64-w64-mingw32/bin/x86_64-w64-mingw32-gcc \
-        DDK_INCLUDE_DIR=x86_64-w64-mingw32/x86_64-w64-mingw32/include/ddk \
-        DESTDIR=_install/
+    - mkdir -p ./mingw-w64-build && touch ./mingw-w64-build/mingw-w64-build
+    - touch -m ./w64-mingw32-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc
+    - make -C . -f Makefile.deps -j1 all BUILD_NATIVE= WERROR=1 Q=
+    - make -j1 all WERROR=1 Q=
+    - make -j1 install WERROR=1 Q= DESTDIR=_install
+    - ls -alh _install
+    - make -C . -f Makefile.deps -j1 all BUILD_NATIVE=1 WERROR=1 Q=
   artifacts:
     expire_in: 1 week
     paths:

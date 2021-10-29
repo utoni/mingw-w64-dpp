@@ -13,12 +13,9 @@
 DPP_ROOT = .
 INSTALL = install
 
-all: deps $(1_TARGET) $(2_TARGET) $(3_TARGET)
+all: $(1_TARGET) $(2_TARGET) $(3_TARGET)
 
 include $(DPP_ROOT)/Makefile.inc
-
-deps:
-	$(call CHECK_DPP)
 
 %.o: %.c
 	$(call BUILD_C_OBJECT,$<,$@)
