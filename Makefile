@@ -52,5 +52,8 @@ clean:
 	rm -f $(2_OBJECTS) $(2_TARGET) $(2_TARGET).map
 	rm -f $(3_OBJECTS) $(3_TARGET) $(3_TARGET).map
 
+help:
+	$(call HELP_MAKE_OPTIONS)
+
 .PHONY: all install distclean clean
 .DEFAULT_GOAL := all

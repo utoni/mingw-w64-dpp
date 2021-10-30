@@ -202,3 +202,12 @@ define INSTALL_EXEC_SIGN
 	done
 	$(INSTALL) "$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-ca-cert.pem" '$(DESTDIR)/$(SIGNTOOL_PREFIX)-ca-cert.crt'
 endef
+
+define HELP_MAKE_OPTIONS
+	@echo 'Common make options for Makefile.inc:'
+	@echo -e '\tBUILD_NATIVE    = no'
+	@echo -e '\tCC              = $(CC)'
+	@echo -e '\tCXX             = $(CXX)'
+	@echo -e '\tDDK_INCLUDE_DIR = $(DDK_INCLUDE_DIR)'
+	@echo -e '\tDPP_ROOT        = $(DPP_ROOT)'
+endef

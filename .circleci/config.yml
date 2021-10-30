@@ -16,6 +16,13 @@ jobs:
           binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-x86-64-dev
       - run: |
           env DEBIAN_FRONTEND=noninteractive \
+          make -C . -f Makefile.deps all \
+          WERROR=1 Q= \
+          CC=/usr/bin/x86_64-w64-mingw32-gcc \
+          CXX=/usr/bin/x86_64-w64-mingw32-g++ \
+          DDK_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include/ddk
+      - run: |
+          env DEBIAN_FRONTEND=noninteractive \
           make install \
           WERROR=1 Q= \
           CC=/usr/bin/x86_64-w64-mingw32-gcc \

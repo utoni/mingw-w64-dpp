@@ -136,5 +136,9 @@ clean: $(EASTL_STATIC_LIB)
 
 endif
 
-.PHONY: all deps-print-local-notice deps-build deps distclean clean
+help:
+	@echo '[Makefile.deps]'
+	$(call HELP_MAKE_OPTIONS)
+
+.PHONY: all deps-print-local-notice deps-build deps distclean clean help
 .DEFAULT_GOAL := all

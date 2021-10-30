@@ -123,6 +123,10 @@ define INSTALL_EXEC_SIGN
 	$(error BUILD_NATIVE does not support code signing.)
 endef
 
-define CHECK_DPP
-	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps all
+define HELP_MAKE_OPTIONS
+	@echo 'Common make options for Makefile.native.inc:'
+	@echo -e '\tBUILD_NATIVE    = yes'
+	@echo -e '\tCC              = $(CC)'
+	@echo -e '\tCXX             = $(CXX)'
+	@echo -e '\tDPP_ROOT        = $(DPP_ROOT)'
 endef
