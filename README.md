@@ -77,9 +77,10 @@ source [path-to-this-repo]/w64-mingw32-sysroot/x86_64/activate.sh
 
 This project uses a very very rudimentary CRT for C and C++ projects.
 Please keep in mind that depending on what you want to do the CRT may lack features you are familiar with.
-Usually copy&pasting them from various online sources should be sufficient.
+Usually this will manifest in linker errors such as undefined references.
+Most of the time copy&pasting missing libc/libgcc functions from various online sources should be sufficient.
 
-Remember: The CRT and CRT++ **sets a driver unload function** meaning that code .e.g.:
+Remember: The CRT/CRT++ **set a driver unload function** meaning that code .e.g.:
 
 ```C
 NTSTATUS MyDriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
@@ -137,7 +138,7 @@ $(USERSPACE_TARGET): $(USERSPACE_OBJECTS)
 ## Thanks goes to:
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script
-- [sidyhe](https://github.com/sidyhe/dxx) for some copy paste ready CRT code ;)
+- [sidyhe](https://github.com/sidyhe/dxx) for some copy paste ready CRT code
 - [liupengs](https://github.com/liupengs/Mini-CRT) helped me to fix the ctor/dtor issue
 
 and last but not least:
