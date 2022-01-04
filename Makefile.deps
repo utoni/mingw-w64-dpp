@@ -61,7 +61,7 @@ ifeq ($(CC),$(LOCAL_MINGW64_CC))
 	@echo "-- ./w64-mingw32-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc does not exist, building toolchain --"
 	@echo "------------------------------------------------------------------------------------------------"
 	@echo
-	env -i ./mingw-w64-build/mingw-w64-build --root-path="$(shell realpath ./w64-mingw32-sysroot)" --disable-threads --jobs $(JOBS) x86_64
+	env -i ./mingw-w64-build/mingw-w64-build --root="$(shell realpath ./w64-mingw32-sysroot)" --disable-threads --jobs $(JOBS) x86_64
 	@echo '#!/usr/bin/env bash' >$(ACTIVATE_SH)
 	@echo >>$(ACTIVATE_SH)
 	@echo 'MYDIR="$$(realpath $$(dirname $${BASH_SOURCE[0]}))"' >>$(ACTIVATE_SH)
