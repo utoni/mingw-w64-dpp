@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2021 Kyle Schwarz <zeranoe@gmail.com>
+# Copyright (C) 2021 Kyle Schwarz <zeranoe@gmail.com>, Toni Uhlig <matzeton@googlemail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@ GCC_TARBALL_VERSION="11.2.0"
 MINGW_W64_TARBALL_SHA512="e5726eff24326dd8997c21e0ea3069fc6b8e2b29ba40648f7c0c8b52980d02b96b13d8c00dfa91b16fcd311d1fb83ec879cf2ce57249b7f5069e4af7b93b872a"
 BINUTILS_TARBALL_SHA512="344968dd0b49eb54e3c67f9e36c7164d78a24bd4274b7656f71de9cf3fe5cff8278c43a35655f74d85ee76b469639fdcb39d9764b489450887b7529df0a3a730"
 GCC_TARBALL_SHA512="155535da34c74467e5d041fc6a79f5f102c30a7808b929a880dc33baae48e706089c8db20b2e30d49f4857c4a65f4e8e8f5a9d121d53facfeb5758d316c76c4d"
-CONFIG_GUESS_EXPECTED_SHA512="c01f0c956f9005ee409ba5d4a67e061c27728cb86c5d22323f1d5fe446e41b1605531758ce582129de56c159418e79330b44e4f19aaa5fa0d1f847b21b937afc"
 
 ENABLE_THREADS="--enable-threads=posix"
 
@@ -186,15 +185,6 @@ download_sources()
         execute "extract GCC tarball" "" \
             tar -xzf gcc.tar.gz --one-top-level=gcc/ --strip-components=1
     fi
-
-    execute "downloading config.guess" "" \
-        curl -o config.guess \
-            "https://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD"
-
-    CONFIG_GUESS_sha512sum="$(sha512sum config.guess | cut -d ' ' -f 1)"
-    execute "verify config.guess SHA-512" \
-        "SHA-512 hash verification failed; new: ${CONFIG_GUESS_sha512sum}" \
-        test "${CONFIG_GUESS_sha512sum}" = "${CONFIG_GUESS_EXPECTED_SHA512}"
 }
 
 build()
@@ -312,14 +302,14 @@ while :; do
             ;;
         -p|--prefix)
             if [ "$2" ]; then
-                PREFIX="$2"
+                PREFIX=$(realpath "$2")
                 shift
             else
                 arg_error "'--prefix' requires a non-empty option argument"
             fi
             ;;
         --prefix=?*)
-            PREFIX=${1#*=}
+            PREFIX=$(realpath "${1#*=}")
             ;;
         --prefix=)
             arg_error "'--prefix' requires a non-empty option argument"
@@ -448,7 +438,7 @@ if [ "${USE_TARBALL_RELEASES}" -ne 0 ]; then
 fi
 
 if [ "$CACHED_SOURCES" ]; then
-    if [ ! -f "$SRC_PATH/config.guess" ]; then
+    if [ ! -f "$SRC_PATH/mingw-w64.tar.gz" ]; then
         arg_error "no sources found, run with --keep-artifacts first"
     fi
 else
@@ -485,8 +475,6 @@ touch "$LOG_FILE"
 if [ ! "$CACHED_SOURCES" ]; then
     download_sources
 fi
-
-BUILD=$(sh "$SRC_PATH/config.guess")
 
 change_dir "$SRC_PATH/gcc"
 
