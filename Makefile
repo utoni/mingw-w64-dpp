@@ -13,6 +13,8 @@
 DPP_ROOT = .
 INSTALL = install
 
+ifndef BUILD_NATIVE
+
 all: $(1_TARGET) $(2_TARGET) $(3_TARGET)
 
 include $(DPP_ROOT)/Makefile.inc
@@ -43,17 +45,33 @@ install: all
 	$(INSTALL) $(2_DRIVER_NAME).bat $(DESTDIR)
 	$(INSTALL) $(3_DRIVER_NAME).bat $(DESTDIR)
 
-distclean: clean
-	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps distclean
+endif
 
 clean:
-	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps clean
 	rm -f $(1_OBJECTS) $(1_TARGET) $(1_TARGET).map
 	rm -f $(2_OBJECTS) $(2_TARGET) $(2_TARGET).map
 	rm -f $(3_OBJECTS) $(3_TARGET) $(3_TARGET).map
 
+#
+# Targets for building dependencies e.g. mingw-gcc/g++, STL, etc.
+#
+
+ifndef JOBS
+JOBS := 4
+endif
+
+deps:
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps WERROR=1 JOBS=$(JOBS) Q=$(Q)
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps BUILD_NATIVE=1 WERROR=1 JOBS=$(JOBS) Q=$(Q)
+
+deps-distclean:
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps distclean
+
+deps-clean:
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps clean
+
 help:
-	$(call HELP_MAKE_OPTIONS)
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps help
 
 .PHONY: all install distclean clean
 .DEFAULT_GOAL := all

@@ -139,6 +139,7 @@ endif
 help:
 	@echo '[Makefile.deps]'
 	$(call HELP_MAKE_OPTIONS)
+	@echo -e '\tJOBS            = $(JOBS)'
 
 .PHONY: all deps-print-local-notice deps-build deps distclean clean help
 .DEFAULT_GOAL := all
