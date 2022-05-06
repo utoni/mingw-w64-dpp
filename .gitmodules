@@ -1,3 +1,0 @@
-[submodule "mingw-w64-build"]
-	path = mingw-w64-build
-	url = https://github.com/lnslbrty/mingw-w64-build-ng.git
