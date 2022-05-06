@@ -11,7 +11,7 @@ beloved containers.
 You will need an modern Mingw64-GCC toolchain.
 Do not use any broken toolchains like the one shipped with debian-10.
 Mingw64-GCC for debian-11 seems to work, but is not well tested.
-Instead either use Zeranoe's build script with `make -C [path-to-this-repo] -f Makefile.deps all` or use your own.
+Instead either use Zeranoe's build script with `make -C [path-to-this-repo] -f Makefile.deps all` (same as `make -C [path-to-this-repo] deps`) or use your own.
 
 ## What?
 
@@ -80,7 +80,7 @@ Please keep in mind that depending on what you want to do the CRT may lack featu
 Usually this will manifest in linker errors such as undefined references.
 Most of the time copy&pasting missing libc/libgcc functions from various online sources should be sufficient.
 
-Remember: The CRT/CRT++ **set a driver unload function** meaning that code .e.g.:
+Remember: The CRT/CRT++ **sets a driver unload function** meaning that code .e.g.:
 
 ```C
 NTSTATUS MyDriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
@@ -103,6 +103,9 @@ To do that simply type:
 ``
 make -C [path-to-this-repo] -f Makefile.deps -j1 all BUILD_NATIVE=1
 ``
+
+The results should be visible in `./CRT` and `EASTL-native-build`.
+If you ran `make -C [path-to-this-repo] deps` before, everything is already done including the native build.
 
 You can use the Host Build in your Makefile based project with:
 

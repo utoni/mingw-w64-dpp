@@ -83,7 +83,7 @@ is_set = \
 
 path_exists = \
 	$(if $(realpath $1),, \
-	$(error ERROR: $1 does not exist, run `make -C $(DPP_ROOT) -f Makefile.deps` first.))
+	$(error ERROR: $1 does not exist, run `make -C $(DPP_ROOT) deps` first.))
 
 define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(CC))
