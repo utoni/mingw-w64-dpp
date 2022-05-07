@@ -1,0 +1,53 @@
+name: Build
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, reopened]
+  release:
+    types: [created]
+  schedule:
+    - cron: "0 13 * * 1"
+
+env:
+  WERROR: 1
+  Q:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} ${{ matrix.gcrypt }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ["ubuntu-latest", "ubuntu-18.04"]
+        include:
+          - compiler: "default-cc"
+            os: "ubuntu-latest"
+          - compiler: "gcc-7"
+            os: "ubuntu-latest"
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Install Ubuntu Prerequisites
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install autoconf automake cmake libtool pkg-config gettext flex bison
+          sudo apt-get install ${{ matrix.compiler }} lcov
+      - name: Print Help
+        run: |
+          make help
+      - name: Build Toolchain, CRTs and EASTL
+        run: |
+          make deps
+      - name: Build Examples
+          make all
+      - name: Cleanup
+          make deps-clean
+          make deps-distclean
