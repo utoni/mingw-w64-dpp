@@ -1,3 +1,4 @@
+[![Build](https://github.com/utoni/mingw-w64-ddk-template/actions/workflows/build.yml/badge.svg)](https://github.com/utoni/mingw-w64-ddk-template/actions/workflows/build.yml)
 ![Gitlab-CI](https://gitlab.com/utoni/mingw-w64-ddk-template/badges/master/pipeline.svg "Gitlab-CI: master branch")
 ![Circle-CI](https://circleci.com/gh/utoni/mingw-w64-ddk-template.svg?style=shield "Circle-CI")
 
