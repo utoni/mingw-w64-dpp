@@ -17,15 +17,17 @@ LOCAL_MINGW64_BUILD_SCRIPT := $(DPP_ROOT)/mingw-w64-build/mingw-w64-build
 LOCAL_MINGW64_BUILD_DIR := $(DPP_ROOT)/w64-mingw32-sysroot/x86_64
 LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
 LOCAL_MINGW64_CXX := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-g++
+LOCAL_MINGW64_RC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-windres
 SIGNTOOL := osslsigncode
 SIGNTOOL_PREFIX := codesign
 
-DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX)
+DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX) $(LOCAL_MINGW64_RC)
 
 INSTALL = install
 CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
 CXX = $(LOCAL_MINGW64_CXX)
+RC = $(LOCAL_MINGW64_RC)
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-m64 -fPIC -fvisibility=hidden \
@@ -88,6 +90,7 @@ path_exists = \
 define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(CC))
 	$(call path_exists,$(CXX))
+	$(call path_exists,$(RC))
 	$(call path_exists,$(DDK_INCLUDE_DIR))
 	$(call path_exists,$(DRIVER_ADDITIONAL_OBJS))
 	$(call path_exists,$(EASTL_STATIC_LIB))
@@ -208,6 +211,7 @@ define HELP_MAKE_OPTIONS
 	@echo -e '\tBUILD_NATIVE    = no'
 	@echo -e '\tCC              = $(CC)'
 	@echo -e '\tCXX             = $(CXX)'
+	@echo -e '\tRC              = $(RC)'
 	@echo -e '\tDDK_INCLUDE_DIR = $(DDK_INCLUDE_DIR)'
 	@echo -e '\tDPP_ROOT        = $(DPP_ROOT)'
 endef
