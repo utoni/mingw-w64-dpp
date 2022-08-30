@@ -34,7 +34,7 @@ makedeps:
         { make deps JOBS=${BUILDJOBS:-4} Q= || { cat bld/build.log; false; }; }
   stage: deps
   only:
-    - master
+    - main
 
 makedeps-again:
   script:
@@ -44,7 +44,7 @@ makedeps-again:
     - make deps JOBS=${BUILDJOBS:-4} Q= || { cat bld/build.log; false; }
   stage: deps
   only:
-    - master
+    - main
   when: manual
 
 build:
@@ -65,6 +65,6 @@ build:
       - _install/
   stage: build
   only:
-    - master
+    - main
   dependencies:
     - makedeps
