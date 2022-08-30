@@ -1,5 +1,5 @@
 [![Build](https://github.com/utoni/mingw-w64-ddk-template/actions/workflows/build.yml/badge.svg "Github Actions")](https://github.com/utoni/mingw-w64-ddk-template/actions/workflows/build.yml)
-[![Gitlab-CI](https://gitlab.com/utoni/mingw-w64-ddk-template/badges/master/pipeline.svg "Gitlab-CI: master branch")](https://gitlab.com/utoni/mingw-w64-ddk-template/-/pipelines)
+[![Gitlab-CI](https://gitlab.com/utoni/mingw-w64-ddk-template/badges/main/pipeline.svg "Gitlab-CI: main branch")](https://gitlab.com/utoni/mingw-w64-ddk-template/-/pipelines)
 [![Circle-CI](https://circleci.com/gh/utoni/mingw-w64-ddk-template.svg?style=shield "Circle-CI")](https://app.circleci.com/pipelines/github/utoni/mingw-w64-ddk-template)
 
 # Mingw64 Driver Plus Plus
@@ -84,7 +84,7 @@ Most of the time copy&pasting missing libc/libgcc functions from various online 
 Remember: The CRT/CRT++ **sets a driver unload function** meaning that code .e.g.:
 
 ```C
-NTSTATUS MyDriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
+NTSTATUS DriverEntry(_In_ struct _DRIVER_OBJECT * DriverObject, _In_ PUNICODE_STRING RegistryPath)
 {
     DriverObject->DriverUnload = MyDriverUnload;
 }
@@ -95,6 +95,21 @@ Instead the function `DriverUnload` will be called.
 Make sure that the symbol `DriverUnload` exists and has the usual ddk function signature:
 `void DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)`.
 This is required to make ctors/dtors work without calling additional functions in `DriverEntry` / `DriverUnload`.
+
+Do not forget to disable `C++ name mangeling` if your driver source is compiled with `g++`:
+
+```C++
+extern "C" {
+NTSTATUS DriverEntry(_In_ struct _DRIVER_OBJECT *DriverObject, _In_ PUNICODE_STRING RegistryPath)
+{
+    // ...
+}
+VOID DriverUnload(_In_ struct _DRIVER_OBJECT *DriverObject)
+{
+    // ...
+}
+}
+```
 
 ## Host EASTL/CRT/CRT++ Build
 
@@ -138,6 +153,8 @@ $(DRIVER_TARGET): $(DRIVER_OBJECTS)
 $(USERSPACE_TARGET): $(USERSPACE_OBJECTS)
 	$(call LINK_CPP_USER_TARGET,$(USERSPACE_OBJECTS),$@)
 ```
+
+[A simple and stupid project example.](https://github.com/utoni/mingw-w64-driver)
 
 ## Thanks goes to:
 
