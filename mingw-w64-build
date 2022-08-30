@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2021 Kyle Schwarz <zeranoe@gmail.com>, Toni Uhlig <matzeton@googlemail.com>
+# Copyright (C) 2022 Kyle Schwarz <zeranoe@gmail.com>, Toni Uhlig <matzeton@googlemail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,22 +19,24 @@
 ROOT_PATH="$HOME/.mingw-w64-build-ng"
 
 MINGW_W64_BRANCH="v9.x"
-BINUTILS_BRANCH="binutils-2_37-branch"
-GCC_BRANCH="releases/gcc-11"
+BINUTILS_BRANCH="binutils-2_39-branch"
+GCC_BRANCH="releases/gcc-12"
 
 USE_TARBALL_RELEASES=1
 
 MINGW_W64_TARBALL_VERSION="v9.0.0"
-BINUTILS_TARBALL_VERSION="2.37"
-GCC_TARBALL_VERSION="11.2.0"
+BINUTILS_TARBALL_VERSION="2.39"
+GCC_TARBALL_VERSION="12.2.0"
 
 MINGW_W64_TARBALL_SHA512="e5726eff24326dd8997c21e0ea3069fc6b8e2b29ba40648f7c0c8b52980d02b96b13d8c00dfa91b16fcd311d1fb83ec879cf2ce57249b7f5069e4af7b93b872a"
-BINUTILS_TARBALL_SHA512="344968dd0b49eb54e3c67f9e36c7164d78a24bd4274b7656f71de9cf3fe5cff8278c43a35655f74d85ee76b469639fdcb39d9764b489450887b7529df0a3a730"
-GCC_TARBALL_SHA512="155535da34c74467e5d041fc6a79f5f102c30a7808b929a880dc33baae48e706089c8db20b2e30d49f4857c4a65f4e8e8f5a9d121d53facfeb5758d316c76c4d"
+BINUTILS_TARBALL_SHA512="b446f60e03c88d70e37089240b7ef563da31fbbf5f41a4de4cf576fa33ab1b184714657eac88aa05b5a051524af9fb9ec12a90d0bb33b16d181a4eb4aa388842"
+GCC_TARBALL_SHA512="9259c6d5c144b76f5159e9b33792bf41b9759ea62f9f85da15761660c434cc98a204208856d12cd8123df35db787e417f15dc4803d45cfd7c79247d612ef53c6"
 
 ENABLE_THREADS="--enable-threads=posix"
 
 JOB_COUNT=$(($(getconf _NPROCESSORS_ONLN) + 2))
+
+LINKED_RUNTIME="msvcrt"
 
 show_help()
 {
@@ -58,6 +60,7 @@ Options:
   --gcc-branch <branch>        NOT RECOMMENDED - set GCC branch (default: $GCC_BRANCH)
   --mingw-w64-branch <branch>  NOT RECOMMENDED - set MinGW-w64 branch (default: $MINGW_W64_BRANCH)
   --force-git                  NOT RECOMMENDED - force git clone (default: disabled)
+  --linked-runtime <runtime>   set MinGW Linked Runtime (default: $LINKED_RUNTIME)
 EOF
 }
 
@@ -230,7 +233,8 @@ build()
 
     execute "($arch): configuring MinGW-w64 headers" "" \
         "$SRC_PATH/mingw-w64/mingw-w64-headers/configure" --build="$BUILD" \
-            --host="$host" --prefix="$prefix/$host"
+            --host="$host" --prefix="$prefix/$host" \
+            --with-default-msvcrt=$LINKED_RUNTIME
 
     execute "($arch): installing MinGW-w64 headers" "" \
         make install
@@ -255,6 +259,7 @@ build()
     execute "($arch): configuring MinGW-w64 CRT" "" \
         "$SRC_PATH/mingw-w64/mingw-w64-crt/configure" --build="$BUILD" \
             --host="$host" --prefix="$prefix/$host" \
+            --with-default-msvcrt=$LINKED_RUNTIME \
             --with-sysroot="$prefix/$host" $crt_lib
 
     execute "($arch): building MinGW-w64 CRT" "" \
@@ -368,6 +373,20 @@ while :; do
             ;;
         --gcc-branch=)
             arg_error "'--gcc-branch' requires a non-empty option argument"
+            ;;
+        --linked-runtime)
+            if [ "$2" ]; then
+                LINKED_RUNTIME="$2"
+                shift
+            else
+                arg_error "'--linked-runtime' requires a non-empty option argument"
+            fi
+            ;;
+        --linked-runtime=?*)
+            LINKED_RUNTIME=${1#*=}
+            ;;
+        --linked-runtime=)
+            arg_error "'--linked-runtime' requires a non-empty option argument"
             ;;
         --mingw-w64-branch)
             USE_TARBALL_RELEASES=0
