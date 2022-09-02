@@ -46,6 +46,7 @@ void stl_test()
 
     eastl::string s;
     s = "This a string";
+    s.append(" ");
     s.append("any");
     DbgPrint("%s\n", s.c_str());
 

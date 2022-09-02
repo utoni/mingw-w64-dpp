@@ -62,6 +62,7 @@ DRIVER_LDFLAGS := -shared \
 	-nostartfiles -nodefaultlibs -nostdlib
 DRIVER_LIBS := -lntoskrnl -lhal
 USER_LDFLAGS := -Wl,--dynamicbase -Wl,--nxcompat -Wl,--gc-sections
+USER_LIBS :=
 
 DRIVER_ADDITIONAL_DEPS := $(DPP_ROOT)/CRT/DriverThread.cpp $(DPP_ROOT)/CRT/DriverThread.hpp
 DRIVER_ADDITIONAL_OBJS := $(DPP_ROOT)/CRT/DriverThread$(NAME_SUFFIX).opp
@@ -173,7 +174,8 @@ define LINK_CPP_USER_TARGET
 		-o '$(2)' \
 		$(1) \
 		$(USER_CRT) \
-		$(EASTL_STATIC_LIB)
+		$(EASTL_STATIC_LIB) \
+		$(USER_LIBS)
 	@echo 'LD  $(2)'
 endef
 
