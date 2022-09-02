@@ -1,5 +1,7 @@
 DPP_ROOT = .
-ACTIVATE_SH = ./w64-mingw32-sysroot/x86_64/activate.sh
+SYSROOT = mingw-w64-sysroot
+SYSROOT_X64 = $(SYSROOT)/x86_64
+ACTIVATE_SH = ./$(SYSROOT_X64)/activate.sh
 
 MAKE_PID := $(shell echo $$PPID)
 JOBS := $(shell ps T | sed -n 's/.*$(MAKE_PID).*$(MAKE).* \(-j\|--jobs=\) *\([0-9][0-9]*\).*/\2/p')
@@ -58,14 +60,14 @@ $(LOCAL_MINGW64_CC): $(LOCAL_MINGW64_BUILD_SCRIPT)
 ifeq ($(CC),$(LOCAL_MINGW64_CC))
 	@echo
 	@echo "------------------------------------------------------------------------------------------------"
-	@echo "-- ./w64-mingw32-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc does not exist, building toolchain --"
+	@echo "-- ./$(SYSROOT_X64)/bin/x86_64-w64-mingw32-gcc does not exist, building toolchain --"
 	@echo "------------------------------------------------------------------------------------------------"
 	@echo
-	env -i ./mingw-w64-build/mingw-w64-build --root="$(shell realpath ./w64-mingw32-sysroot)" --disable-threads --jobs $(JOBS) x86_64
+	env -i ./mingw-w64-build/mingw-w64-build --root="$(shell realpath ./$(SYSROOT))" --disable-threads --jobs $(JOBS) x86_64
 	@echo '#!/usr/bin/env bash' >$(ACTIVATE_SH)
 	@echo >>$(ACTIVATE_SH)
 	@echo 'MYDIR="$$(realpath $$(dirname $${BASH_SOURCE[0]}))"' >>$(ACTIVATE_SH)
-	@echo 'export PATH="$${MYDIR}/w64-mingw32-sysroot/x86_64/bin:$${MYDIR}/bin:$${PATH}"' >>$(ACTIVATE_SH)
+	@echo 'export PATH="$${MYDIR}/$(SYSROOT_X64)/bin:$${MYDIR}/bin:$${PATH}"' >>$(ACTIVATE_SH)
 	@chmod +x $(ACTIVATE_SH)
 endif
 

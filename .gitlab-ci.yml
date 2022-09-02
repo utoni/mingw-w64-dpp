@@ -7,7 +7,7 @@ stages:
 cache:
   key: toolchain
   paths:
-    - w64-mingw32-sysroot/
+    - mingw-w64-sysroot/
     - EASTL-build/libEASTL.a
     - EASTL-native-build/libEASTL.a
     - CRT/*.o
@@ -23,11 +23,11 @@ before_script:
 
 makedeps:
   script:
-    - if [ "x${FORCE_TOOLCHAIN_REBUILD:-}" != "x" ]; then rm -rf w64-mingw32-sysroot/; fi
+    - if [ "x${FORCE_TOOLCHAIN_REBUILD:-}" != "x" ]; then rm -rf mingw-w64-sysroot/; fi
     - pwd
     - >
-        { test -x w64-mingw32-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc && \
-          test -x w64-mingw32-sysroot/x86_64/bin/x86_64-w64-mingw32-g++ && \
+        { test -x mingw-w64-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc && \
+          test -x mingw-w64-sysroot/x86_64/bin/x86_64-w64-mingw32-g++ && \
           test -r CRT/kcrt.opp && \
           test -r EASTL-build/libEASTL.a && \
           test -r EASTL-native-build/libEASTL.a; } || \
@@ -51,11 +51,11 @@ build:
   script:
     - make help
     - make help BUILD_NATIVE=1
-    - ls -alh w64-mingw32-sysroot/x86_64/
-    - ls -alh w64-mingw32-sysroot/x86_64/bin/
+    - ls -alh mingw-w64-sysroot/x86_64/
+    - ls -alh mingw-w64-sysroot/x86_64/bin/
     - pwd
     - mkdir -p ./mingw-w64-build && touch ./mingw-w64-build/mingw-w64-build
-    - touch -m ./w64-mingw32-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc
+    - touch -m ./mingw-w64-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc
     - make -j1 all WERROR=1 Q=
     - make -j1 install WERROR=1 Q= DESTDIR=_install
     - ls -alh _install
