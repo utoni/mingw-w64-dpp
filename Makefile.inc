@@ -32,6 +32,7 @@ DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-m64 -fPIC -fvisibility=hidden \
 	-ffunction-sections -fdata-sections -fno-builtin -ffreestanding \
+	-fno-stack-protector -mno-stack-arg-probe \
 	-I$(DPP_ROOT)/CRT -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset
@@ -104,7 +105,7 @@ define BUILD_C_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CC) -std=c99 $(CFLAGS) -c $(1) -o $(2)
+	$(Q)$(CC) -std=c99 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) -c $(1) -o $(2)
 	@echo 'CC  $(2)'
 endef
 
@@ -112,7 +113,7 @@ define BUILD_CPP_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c $(1) -o $(2)
+	$(Q)$(CXX) $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) $(CXXFLAGS) $(EASTL_CXXFLAGS) $(CUSTOM_CXXFLAGS) -c $(1) -o $(2)
 	@echo 'CXX $@'
 endef
 
@@ -127,7 +128,8 @@ define LINK_C_KERNEL_TARGET
 		-o '$(2)' \
 		$(1) \
 		$(DRIVER_CRT) \
-		$(DRIVER_LIBS)
+		$(DRIVER_LIBS) \
+		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
 endef
 
@@ -140,6 +142,8 @@ define LINK_C_USER_TARGET
 		-o '$(2)' \
 		$(1) \
 		$(EASTL_STATIC_LIB) \
+		$(USER_LIBS) \
+		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
 endef
 
@@ -158,7 +162,8 @@ define LINK_CPP_KERNEL_TARGET
 		$(DRIVER_ADDITIONAL_OBJS) \
 		$(DRIVER_CRTPLUSPLUS) \
 		$(EASTL_STATIC_LIB) \
-		$(DRIVER_LIBS)
+		$(DRIVER_LIBS) \
+		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
 endef
 
@@ -175,7 +180,8 @@ define LINK_CPP_USER_TARGET
 		$(1) \
 		$(USER_CRT) \
 		$(EASTL_STATIC_LIB) \
-		$(USER_LIBS)
+		$(USER_LIBS) \
+		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
 endef
 

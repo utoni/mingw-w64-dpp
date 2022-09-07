@@ -1,6 +1,6 @@
-[![Build](https://github.com/utoni/mingw-w64-ddk-template/actions/workflows/build.yml/badge.svg "Github Actions")](https://github.com/utoni/mingw-w64-ddk-template/actions/workflows/build.yml)
-[![Gitlab-CI](https://gitlab.com/utoni/mingw-w64-ddk-template/badges/main/pipeline.svg "Gitlab-CI: main branch")](https://gitlab.com/utoni/mingw-w64-ddk-template/-/pipelines)
-[![Circle-CI](https://circleci.com/gh/utoni/mingw-w64-ddk-template.svg?style=shield "Circle-CI")](https://app.circleci.com/pipelines/github/utoni/mingw-w64-ddk-template)
+[![Build](https://github.com/utoni/mingw-w64-dpp/actions/workflows/build.yml/badge.svg "Github Actions")](https://github.com/utoni/mingw-w64-dpp/actions/workflows/build.yml)
+[![Gitlab-CI](https://gitlab.com/utoni/mingw-w64-dpp/badges/main/pipeline.svg "Gitlab-CI: main branch")](https://gitlab.com/utoni/mingw-w64-dpp/-/pipelines)
+[![Circle-CI](https://circleci.com/gh/utoni/mingw-w64-dpp.svg?style=shield "Circle-CI")](https://app.circleci.com/pipelines/github/utoni/mingw-w64-dpp)
 
 # Mingw64 Driver Plus Plus
 
@@ -71,7 +71,7 @@ You can also add the toolchain to your path and use it for other projects w/o an
 
 ```
 make -C [path-to-this-repo] -f Makefile.deps all
-source [path-to-this-repo]/w64-mingw32-sysroot/x86_64/activate.sh
+source [path-to-this-repo]/mingw-w64-sysroot/x86_64/activate.sh
 ```
 
 ## The CRT and CRT++
@@ -96,7 +96,7 @@ Make sure that the symbol `DriverUnload` exists and has the usual ddk function s
 `void DriverUnload(_In_ struct _DRIVER_OBJECT * DriverObject)`.
 This is required to make ctors/dtors work without calling additional functions in `DriverEntry` / `DriverUnload`.
 
-Do not forget to disable `C++ name mangeling` if your driver source is compiled with `g++`:
+Do not forget to disable `C++ name mangeling` if your driver source which contains the `DriverEntry` and `DriverUnload` symbols is compiled with `g++`:
 
 ```C++
 extern "C" {
@@ -125,7 +125,7 @@ If you ran `make -C [path-to-this-repo] deps` before, everything is already done
 
 You can use the Host Build in your Makefile based project with:
 
-```
+```make
 ifndef DPP_ROOT
 $(error DPP_ROOT is undefined)
 endif
@@ -136,13 +136,24 @@ else
 include $(DPP_ROOT)/Makefile.native.inc
 endif
 
+# Driver
 DRIVER_NAME = Driver
 DRIVER_OBJECTS = $(DRIVER_NAME).opp
 DRIVER_TARGET = $(DRIVER_NAME).sys
+DRIVER_LIBS =
+CFLAGS_$(DRIVER_NAME).opp =
+LDFLAGS_$(DRIVER_NAME).sys =
 
-USERSPACE_NAME = usa$(NAME_SUFFIX)
-USERSPACE_OBJECTS = $(USERSPACE_NAME).opp
-USERSPACE_TARGET = $(USERSPACE_NAME).exe
+# Userspace
+USER_NAME = usa$(NAME_SUFFIX)
+USER_OBJECTS = $(USERSPACE_NAME).opp
+USER_TARGET = $(USERSPACE_NAME).exe
+USER_LIBS =
+CFLAGS_$(USERSPACE_NAME).opp =
+LDFLAGS_$(USERSPACE_NAME).exe =
+
+# specify additional CFLAGS for kernel/user targets
+CUSTOM_CFLAGS = -I.
 
 %.opp: %.cpp
 	$(call BUILD_CPP_OBJECT,$<,$@)
