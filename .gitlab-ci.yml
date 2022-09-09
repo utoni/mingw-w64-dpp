@@ -56,8 +56,8 @@ build:
     - pwd
     - mkdir -p ./mingw-w64-build && touch ./mingw-w64-build/mingw-w64-build
     - touch -m ./mingw-w64-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc
-    - make -j1 all WERROR=1 Q=
-    - make -j1 install WERROR=1 Q= DESTDIR=_install
+    - make -j1 examples WERROR=1 Q=
+    - make -j1 examples-install WERROR=1 Q= DESTDIR=$(realpath _install)
     - ls -alh _install
   artifacts:
     expire_in: 1 week

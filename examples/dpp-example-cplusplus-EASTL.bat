@@ -1,6 +1,6 @@
 @echo off
-set SERVICE_NAME=DDK-Template-CPlusPlus
-set DRIVER="%~dp0\ddk-template-cplusplus.sys"
+set SERVICE_NAME=DPP-Example-CPlusPlus-EASTL
+set DRIVER="%~dp0\dpp-example-cplusplus-EASTL.sys"
 
 net session >nul 2>&1
 if NOT %ERRORLEVEL% EQU 0 (

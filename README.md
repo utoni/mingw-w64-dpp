@@ -1,5 +1,5 @@
 [![Build](https://github.com/utoni/mingw-w64-dpp/actions/workflows/build.yml/badge.svg "Github Actions")](https://github.com/utoni/mingw-w64-dpp/actions/workflows/build.yml)
-[![Gitlab-CI](https://gitlab.com/utoni/mingw-w64-dpp/badges/main/pipeline.svg "Gitlab-CI: main branch")](https://gitlab.com/utoni/mingw-w64-dpp/-/pipelines)
+[![Gitlab-CI](https://gitlab.com/utoni/mingw-w64-ddk-template/badges/main/pipeline.svg "Gitlab-CI: main branch")](https://gitlab.com/utoni/mingw-w64-ddk-template/-/pipelines)
 [![Circle-CI](https://circleci.com/gh/utoni/mingw-w64-dpp.svg?style=shield "Circle-CI")](https://app.circleci.com/pipelines/github/utoni/mingw-w64-dpp)
 
 # Mingw64 Driver Plus Plus

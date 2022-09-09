@@ -2,7 +2,7 @@
 /codesign-*
 /EASTL-build/
 /EASTL-native-build/
-/w64-mingw32-sysroot/
+/mingw-w64-sysroot/
 /*.o
 /*.opp
 /CRT/*.o

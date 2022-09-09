@@ -39,7 +39,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install autoconf automake cmake libtool pkg-config gettext flex bison
-          sudo apt-get install ${{ matrix.compiler }} lcov
+          sudo apt-get install ${{ matrix.compiler }} lcov osslsigncode
       - name: Print Help
         run: |
           make help
@@ -48,7 +48,11 @@ jobs:
           make deps
       - name: Build Examples
         run: |
-          make all
+          make examples
+      - name: Install Examples
+        run: |
+          make examples-install DESTDIR=$(realpath _install)
+          ls -alh _install
       - name: Cleanup
         run: |
           make deps-clean
