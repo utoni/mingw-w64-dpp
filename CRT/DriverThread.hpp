@@ -6,6 +6,7 @@
 extern "C" void InterceptorThreadRoutine(PVOID threadContext);
 
 typedef NTSTATUS (*threadRoutine_t)(PVOID);
+typedef NTSTATUS (*workerRoutine_t)(PSLIST_ENTRY);
 
 namespace DriverThread
 {
@@ -76,6 +77,26 @@ public:
 
 private:
     KSEMAPHORE m_semaphore;
+};
+
+class WorkQueue
+{
+public:
+    WorkQueue(void);
+    ~WorkQueue(void);
+    NTSTATUS Start(workerRoutine_t workerRoutine);
+    void Stop(void);
+    void Enqueue(PSLIST_ENTRY workItem);
+
+private:
+    Mutex m_mutex;
+    SLIST_HEADER m_work;
+    KEVENT m_wakeEvent;
+    BOOLEAN m_stopWorker; // Work LIST must be empty and StopWorker TRUE to be able to stop!
+    Thread m_worker;
+    workerRoutine_t m_workerRoutine;
+
+    static NTSTATUS WorkerInterceptorRoutine(PVOID workerContext);
 };
 
 }; // namespace DriverThread

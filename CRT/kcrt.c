@@ -112,6 +112,11 @@ void * __cdecl malloc(size_t size)
     return NULL;
 }
 
+void * __cdecl calloc(size_t nmemb, size_t size)
+{
+    return malloc(nmemb * size);
+}
+
 void * __cdecl realloc(void * ptr, size_t new_size)
 {
     if (!ptr)
@@ -181,7 +186,8 @@ void __cdecl __cxa_pure_virtual(void)
 
 float __cdecl ceilf(float x)
 {
-    union {
+    union
+    {
         float f;
         UINT32 i;
     } u = {x};
@@ -215,7 +221,7 @@ float __cdecl ceilf(float x)
 
 static void __cdecl __ctors(void)
 {
-    unsigned long long int const * const * const l = (unsigned long long int const * const * const)&__CTOR_LIST__;
+    unsigned long long int const * const * const l = (unsigned long long int const * const * const) & __CTOR_LIST__;
     unsigned long long int i = (unsigned long long int)*l;
     init_and_deinit_fn const * p;
 

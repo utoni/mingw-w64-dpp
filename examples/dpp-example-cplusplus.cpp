@@ -56,6 +56,13 @@ private:
     unsigned int some_value = 0;
 };
 
+struct WorkItem
+{
+    SLIST_ENTRY QueueEntry;
+
+    UINT32 counter;
+};
+static DriverThread::WorkQueue work_queue;
 static DerivedWithCDtor some_static(0xDEADC0DE);
 
 struct threadContext
@@ -79,6 +86,21 @@ static NTSTATUS threadRoutine(PVOID threadContext)
     return STATUS_SUCCESS;
 }
 
+static NTSTATUS test_worker(PSLIST_ENTRY workItem)
+{
+    struct WorkItem * wi = CONTAINING_RECORD(workItem, struct WorkItem, QueueEntry);
+
+    while (wi->counter-- > 0)
+    {
+        DbgPrint("WorkItem Counter: %u\n", wi->counter);
+    }
+    DbgPrint("Worker finished.\n");
+
+    free(wi);
+
+    return STATUS_SUCCESS;
+}
+
 static void test_cplusplus(void)
 {
     TestSmth t;
@@ -93,6 +115,12 @@ static void test_cplusplus(void)
     ctx.dth.WaitForTermination();
     ctx.dth.WaitForTermination();
     DbgPrint("MainThread EOF\n");
+
+    struct WorkItem * wi = (struct WorkItem *)calloc(1, sizeof(*wi));
+    wi->counter = 3;
+    work_queue.Enqueue(&wi->QueueEntry);
+    work_queue.Start(test_worker);
+    work_queue.Stop();
 
     some_static.doSmth();
 }

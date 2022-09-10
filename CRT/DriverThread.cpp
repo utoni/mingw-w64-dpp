@@ -25,6 +25,11 @@ NTSTATUS DriverThread::Thread::Start(threadRoutine_t routine, PVOID threadContex
     NTSTATUS status;
 
     LockGuard lock(m_mutex);
+    if (m_threadObject != nullptr)
+    {
+        return STATUS_UNSUCCESSFUL;
+    }
+
     m_routine = routine;
     m_threadContext = threadContext;
     status = PsCreateSystemThread(&threadHandle, (ACCESS_MASK)0, NULL, (HANDLE)0, NULL, InterceptorThreadRoutine, this);
@@ -34,7 +39,14 @@ NTSTATUS DriverThread::Thread::Start(threadRoutine_t routine, PVOID threadContex
         return status;
     }
 
-    ObReferenceObjectByHandle(threadHandle, THREAD_ALL_ACCESS, NULL, KernelMode, (PVOID *)&m_threadObject, NULL);
+    status =
+        ObReferenceObjectByHandle(threadHandle, THREAD_ALL_ACCESS, NULL, KernelMode, (PVOID *)&m_threadObject, NULL);
+
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
     return ZwClose(threadHandle);
 }
 
@@ -44,6 +56,7 @@ NTSTATUS DriverThread::Thread::WaitForTermination(LONGLONG timeout)
     {
         return STATUS_UNSUCCESSFUL;
     }
+
     LockGuard lock(m_mutex);
     if (m_threadObject == nullptr)
     {
@@ -134,4 +147,108 @@ DriverThread::LockGuard::LockGuard(Mutex & m) : m_Lock(m)
 DriverThread::LockGuard::~LockGuard(void)
 {
     m_Lock.Unlock();
+}
+
+// WorkQueue
+
+DriverThread::WorkQueue::WorkQueue(void) : m_worker()
+{
+    InitializeSListHead(&m_work);
+    KeInitializeEvent(&m_wakeEvent, SynchronizationEvent, FALSE);
+    m_stopWorker = FALSE;
+}
+
+DriverThread::WorkQueue::~WorkQueue(void)
+{
+    Stop();
+}
+
+NTSTATUS DriverThread::WorkQueue::Start(workerRoutine_t workerRoutine)
+{
+    NTSTATUS status;
+
+    {
+        LockGuard lock(m_mutex);
+        m_workerRoutine = workerRoutine;
+        status = m_worker.Start(WorkerInterceptorRoutine, this);
+    }
+
+    if (!NT_SUCCESS(status) && status != STATUS_UNSUCCESSFUL)
+    {
+        Stop();
+    }
+
+    return status;
+}
+
+void DriverThread::WorkQueue::Stop(void)
+{
+    LockGuard lock(m_mutex);
+    if (m_stopWorker == TRUE)
+    {
+        return;
+    }
+    m_stopWorker = TRUE;
+    KeSetEvent(&m_wakeEvent, 0, FALSE);
+}
+
+void DriverThread::WorkQueue::Enqueue(PSLIST_ENTRY workItem)
+{
+    if (InterlockedPushEntrySList(&m_work, workItem) == NULL)
+    {
+        // Work queue was empty. So, signal the work queue event in case the
+        // worker thread is waiting on the event for more operations.
+        KeSetEvent(&m_wakeEvent, 0, FALSE);
+    }
+}
+
+NTSTATUS DriverThread::WorkQueue::WorkerInterceptorRoutine(PVOID workerContext)
+{
+    DriverThread::WorkQueue * wq = (DriverThread::WorkQueue *)workerContext;
+    PSLIST_ENTRY listEntryRev, listEntry, next;
+
+    PAGED_CODE();
+
+    for (;;)
+    {
+        // Flush all the queued operations into a local list
+        listEntryRev = InterlockedFlushSList(&wq->m_work);
+
+        if (listEntryRev == NULL)
+        {
+
+            // There's no work to do. If we are allowed to stop, then stop.
+            if (wq->m_stopWorker == TRUE)
+            {
+                break;
+            }
+
+            // Otherwise, wait for more operations to be enqueued.
+            KeWaitForSingleObject(&wq->m_wakeEvent, Executive, KernelMode, FALSE, 0);
+            continue;
+        }
+
+        // Need to reverse the flushed list in order to preserve the FIFO order
+        listEntry = NULL;
+        while (listEntryRev != NULL)
+        {
+            next = listEntryRev->Next;
+            listEntryRev->Next = listEntry;
+            listEntry = listEntryRev;
+            listEntryRev = next;
+        }
+
+        // Now process the correctly ordered list of operations one by one
+        while (listEntry)
+        {
+            PSLIST_ENTRY arg = listEntry;
+            listEntry = listEntry->Next;
+            if (wq->m_workerRoutine(arg) != STATUS_SUCCESS)
+            {
+                wq->m_stopWorker = TRUE;
+            }
+        }
+    }
+
+    return STATUS_SUCCESS;
 }
