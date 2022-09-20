@@ -15,19 +15,37 @@ jobs:
           git subversion curl xz-utils osslsigncode \
           binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-x86-64-dev
       - run: |
-          env DEBIAN_FRONTEND=noninteractive \
-          make -C . -f Makefile.deps all \
-          WERROR=1 JOBS=4 Q= \
-          CC=/usr/bin/x86_64-w64-mingw32-gcc \
-          CXX=/usr/bin/x86_64-w64-mingw32-g++ \
-          RC=/usr/bin/x86_64-w64-mingw32-windres \
-          DDK_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include/ddk
+          make deps \
+            WERROR=1 JOBS=4 Q= \
+            LOCAL_MINGW64_CC=/usr/bin/x86_64-w64-mingw32-gcc \
+            LOCAL_MINGW64_CXX=/usr/bin/x86_64-w64-mingw32-g++ \
+            LOCAL_MINGW64_RC=/usr/bin/x86_64-w64-mingw32-windres \
+            DDK_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include/ddk
       - run: |
-          env DEBIAN_FRONTEND=noninteractive \
+          test -r EASTL-build/libEASTL.a
+      - run: |
           make examples-install \
-          WERROR=1 Q= \
-          CC=/usr/bin/x86_64-w64-mingw32-gcc \
-          CXX=/usr/bin/x86_64-w64-mingw32-g++ \
-          RC=/usr/bin/x86_64-w64-mingw32-windres \
-          DDK_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include/ddk \
-          DESTDIR=$(realpath _install)
+            WERROR=1 JOBS=4 Q= \
+            LOCAL_MINGW64_CC=/usr/bin/x86_64-w64-mingw32-gcc \
+            LOCAL_MINGW64_CXX=/usr/bin/x86_64-w64-mingw32-g++ \
+            LOCAL_MINGW64_RC=/usr/bin/x86_64-w64-mingw32-windres \
+            DDK_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include/ddk \
+            DESTDIR=$(realpath _install)
+      - run: |
+          test -r _install/codesign-ca-cert.crt -a \
+               -r _install/dpp-example.bat -a \
+               -r _install/dpp-example-cplusplus.bat -a \
+               -r _install/dpp-example-cplusplus-EASTL.bat -a \
+               -r _install/dpp-example.sys -a \
+               -r _install/dpp-example-cplusplus.sys -a \
+               -r _install/dpp-example-cplusplus-EASTL.sys
+      - run: |
+          wget 'https://github.com/utoni/mingw-w64-build-ng/releases/download/v1.0/mingw-w64-toolchain.tbz2' -O ./mingw-w64-toolchain.tbz2
+      - run: |
+          make examples-clean
+      - run: |
+          make deps-distclean
+      - run: |
+          make deps \
+            WERROR=1 JOBS=4 Q= \
+            USE_MINGW64_TARBALL=./mingw-w64-toolchain.tbz2

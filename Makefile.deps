@@ -49,14 +49,30 @@ endif
 $(LOCAL_MINGW64_BUILD_SCRIPT):
 ifeq ($(CC),$(LOCAL_MINGW64_CC))
 	@echo
-	@echo "------------------------------------------------------------------------------"
-	@echo "-- ./mingw-w64-build/mingw-w64-build does not exist, clonging git submodule --"
-	@echo "------------------------------------------------------------------------------"
+	@echo "-----------------------------------------------------------------------------"
+	@echo "-- ./mingw-w64-build/mingw-w64-build does not exist, cloning git submodule --"
+	@echo "-----------------------------------------------------------------------------"
 	@echo
 	git submodule update --init mingw-w64-build
 endif
 
+ifeq ($(USE_MINGW64_TARBALL),)
 $(LOCAL_MINGW64_CC): $(LOCAL_MINGW64_BUILD_SCRIPT)
+else
+$(LOCAL_MINGW64_CC):
+endif
+ifneq ($(USE_MINGW64_TARBALL),)
+	@echo
+	@echo "------------------------------------------------------------------------------------------------"
+	@echo "-- USE_MINGW64_TARBALL found: $(USE_MINGW64_TARBALL) --"
+	@echo "------------------------------------------------------------------------------------------------"
+	@echo
+ifneq ($(Q),@)
+	tar -xjvf '$(USE_MINGW64_TARBALL)'
+else
+	tar -xjf '$(USE_MINGW64_TARBALL)'
+endif
+else
 ifeq ($(CC),$(LOCAL_MINGW64_CC))
 	@echo
 	@echo "------------------------------------------------------------------------------------------------"
@@ -69,6 +85,7 @@ ifeq ($(CC),$(LOCAL_MINGW64_CC))
 	@echo 'MYDIR="$$(realpath $$(dirname $${BASH_SOURCE[0]}))"' >>$(ACTIVATE_SH)
 	@echo 'export PATH="$${MYDIR}/$(SYSROOT_X64)/bin:$${MYDIR}/bin:$${PATH}"' >>$(ACTIVATE_SH)
 	@chmod +x $(ACTIVATE_SH)
+endif
 endif
 
 ifeq ($(CC),$(LOCAL_MINGW64_CC))
@@ -108,7 +125,7 @@ distclean: clean
 	rm -rf $(LOCAL_MINGW64_BUILD_DIR)
 	git submodule deinit --all
 
-clean: $(EASTL_STATIC_LIB)
+clean:
 	rm -f $(DRIVER_CRT) $(DRIVER_CRTPLUSPLUS) $(USER_CRT) $(EASTL_STATIC_LIB)
 	rm -f $(DRIVER_ADDITIONAL_OBJS)
 	rm -rf $(EASTL_BUILDDIR)
@@ -133,7 +150,7 @@ $(EASTL_STATIC_LIB): $(CXX) $(EASTL_DEPS)
 
 distclean: clean
 
-clean: $(EASTL_STATIC_LIB)
+clean:
 	rm -f $(USER_CRT) $(EASTL_STATIC_LIB)
 	rm -rf $(EASTL_BUILDDIR)
 

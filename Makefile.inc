@@ -13,13 +13,28 @@ ifeq ($(Q),)
 CMAKE_Q = VERBOSE=1
 endif
 DPP_ROOT = $(realpath .)
+ifeq ($(LOCAL_MINGW64_CC),)
 LOCAL_MINGW64_BUILD_SCRIPT := $(DPP_ROOT)/mingw-w64-build/mingw-w64-build
 LOCAL_MINGW64_BUILD_DIR := $(DPP_ROOT)/mingw-w64-sysroot/x86_64
 LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
 LOCAL_MINGW64_CXX := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-g++
 LOCAL_MINGW64_RC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-windres
+else
+ifeq ($(LOCAL_MINGW64_CXX),)
+$(error LOCAL_MINGW64_CC was set, missing required LOCAL_MINGW64_CXX)
+endif
+ifeq ($(LOCAL_MINGW64_RC),)
+$(error LOCAL_MINGW64_CC was set, missing required LOCAL_MINGW64_RC)
+endif
+endif
+
+ifeq ($(SIGNTOOL),)
 SIGNTOOL := osslsigncode
+endif
+
+ifeq ($(SIGNTOOL_PREFIX),)
 SIGNTOOL_PREFIX := codesign
+endif
 
 DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX) $(LOCAL_MINGW64_RC)
 
