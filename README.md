@@ -4,9 +4,9 @@
 
 # Mingw64 Driver Plus Plus
 
-A demonstration on how to compile Windows kernel drivers using Mingw64.
+A Windows kernel driver C/C++ SDK using Mingw64.
 
-It provides also an example with a feature complete STL including your
+It provides also some examples and a feature complete STL including your
 beloved containers.
 
 You will need an modern Mingw64-GCC toolchain.
@@ -16,9 +16,9 @@ Instead either use Zeranoe's build script with `make -C [path-to-this-repo] -f M
 
 ## What?
 
-1. ddk-template: plain and stupid ddk C example
-2. ddk-template-cplusplus: same, but written in C++, including a very complex class and some MT
-3. ddk-template-cplusplus-EASTL: C++ example w/ (EA)STL integration, basicially everything usable except for SEH and assertions.
+1. `examples/dpp-template`: plain and stupid ddk C example
+2. `examples/dpp-template-cplusplus`: same, but written in C++, including a very complex class and some MT
+3. `examples/dpp-template-cplusplus-EASTL`: C++ example w/ (EA)STL integration, basicially everything usable except for SEH and assertions.
 
 ## Build and Test
 
