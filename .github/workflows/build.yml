@@ -27,10 +27,10 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "ubuntu-18.04"]
         include:
-          - compiler: "default-cc"
+          - compiler: "gcc"
             os: "ubuntu-latest"
           - compiler: "gcc-7"
-            os: "ubuntu-latest"
+            os: "ubuntu-18.04"
 
     steps:
       - uses: actions/checkout@v2

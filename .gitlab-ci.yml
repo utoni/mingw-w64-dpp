@@ -31,7 +31,7 @@ makedeps:
           test -r CRT/kcrt.opp && \
           test -r EASTL-build/libEASTL.a && \
           test -r EASTL-native-build/libEASTL.a; } || \
-        { make deps JOBS=${BUILDJOBS:-4} Q= || { cat bld/build.log; false; }; }
+        { make deps JOBS=${BUILDJOBS:-4} Q= || { cat mingw-w64-sysroot/build.log; false; }; }
   stage: deps
   only:
     - main
@@ -41,7 +41,7 @@ makedeps-again:
     - git clean -df .
     - git clean -dfX .
     - git checkout .
-    - make deps JOBS=${BUILDJOBS:-4} Q= || { cat bld/build.log; false; }
+    - make deps JOBS=${BUILDJOBS:-4} Q= || { cat mingw-w64-sysroot/build.log; false; }
   stage: deps
   only:
     - main
