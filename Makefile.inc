@@ -18,6 +18,7 @@ LOCAL_MINGW64_BUILD_SCRIPT := $(DPP_ROOT)/mingw-w64-build/mingw-w64-build
 LOCAL_MINGW64_BUILD_DIR := $(DPP_ROOT)/mingw-w64-sysroot/x86_64
 LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
 LOCAL_MINGW64_CXX := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-g++
+LOCAL_MINGW64_AR := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-ar
 LOCAL_MINGW64_RC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-windres
 else
 ifeq ($(LOCAL_MINGW64_CXX),)
@@ -36,12 +37,13 @@ ifeq ($(SIGNTOOL_PREFIX),)
 SIGNTOOL_PREFIX := codesign
 endif
 
-DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX) $(LOCAL_MINGW64_RC)
+DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX) $(LOCAL_MINGW64_AR) $(LOCAL_MINGW64_RC)
 
 INSTALL = install
 CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
 CXX = $(LOCAL_MINGW64_CXX)
+AR = $(LOCAL_MINGW64_AR)
 RC = $(LOCAL_MINGW64_RC)
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
@@ -222,12 +224,32 @@ define INSTALL_EXEC_SIGN
 		rm -f "$(DESTDIR)/$$target"; \
 		$(dir $(CC))/x86_64-w64-mingw32-strip -s "$$target"; \
 		$(SIGNTOOL) sign -pkcs12 '$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-code.p12' \
-			-ac '$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-ca-cert.pem' \
 			-in "$$target" \
 			-out "$(DESTDIR)/$$target"; \
 	done
 	$(INSTALL) "$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-ca-cert.pem" '$(DESTDIR)/$(SIGNTOOL_PREFIX)-ca-cert.crt'
 endef
+
+define INSTALL_HEADERS
+	$(call is_set,$(1),First argument: Header subdirectory missing)
+	$(call is_set,$(2),Second argument: Header files missing)
+	$(call is_set,$(3),Third argument: Output directory missing)
+	for header in $(2); do \
+		mkdir -p '$(3)/include/$(1)/'; \
+		$(INSTALL) -m0644 "$$header" '$(3)/include/$(1)/'; \
+	done
+endef
+
+ifneq ($(LOCAL_MINGW64_AR),)
+define PACKAGE
+	$(call is_set,$(1),First argument: Library name missing)
+	$(call is_set,$(2),Second argument: Object files missing)
+	$(call is_set,$(3),Third argument: Output directory missing)
+	mkdir -p '$(3)/lib'
+	$(AR) -rsv '$(3)/lib/lib$(1).a' $(2)
+	tar --no-acls --no-selinux --no-xattrs --transform 's,^$(3),deps,' -cvjf '$(1).dpp' '$(3)'
+endef
+endif
 
 define HELP_MAKE_OPTIONS
 	@echo 'Common make options for Makefile.inc:'

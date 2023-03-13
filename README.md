@@ -74,6 +74,14 @@ make -C [path-to-this-repo] -f Makefile.deps all
 source [path-to-this-repo]/mingw-w64-sysroot/x86_64/activate.sh
 ```
 
+### Packaging
+
+It is possible to create `*.dpp` archives ready to get shipped.
+To do this you need to call the `PACKAGE` macro.
+But before you should install public header files with the `INSTALL_HEADERS` macro.
+
+See the `Makefile` of [mingw-w64-ksocket](https://github.com/utoni/mingw-w64-ksocket.git) for an example.
+
 ## The CRT and CRT++
 
 This project uses a very very rudimentary CRT for C and C++ projects.
