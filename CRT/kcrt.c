@@ -12,6 +12,7 @@ extern void (*__CTOR_LIST__)();
 extern void (*__DTOR_LIST__)();
 extern NTSTATUS __cdecl DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE_STRING RegistryPath);
 extern void __cdecl DriverUnload(struct _DRIVER_OBJECT * DriverObject);
+extern int __cdecl ntdll_zw_functions(void);
 
 DRIVER_INITIALIZE __cdecl _CRT_DriverEntry;
 DRIVER_UNLOAD __cdecl _CRT_DriverUnload;
@@ -274,6 +275,13 @@ NTSTATUS __cdecl _CRT_DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE
 
     KCRT_OnDriverEntry();
 
+    int zw_retval = ntdll_zw_functions();
+    if (zw_retval != 0)
+    {
+        DbgPrint("ERROR: Missing %d required system routines.\n", zw_retval);
+        return STATUS_NOT_IMPLEMENTED;
+    }
+
     retval = DriverEntry(DriverObject, RegistryPath);
 
     /* support for service stopping and CRT de-init */
@@ -290,4 +298,9 @@ void __cdecl _enable(void)
 void __cdecl _disable(void)
 {
     __asm__ __volatile__("cli");
+}
+
+void * __cdecl _AddressOfReturnAddress(void)
+{
+    return __builtin_extract_return_addr(__builtin_return_address(0));
 }

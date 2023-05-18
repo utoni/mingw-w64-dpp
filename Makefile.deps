@@ -22,6 +22,10 @@ $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/kcrt.c
 	$(Q)$(CC) -std=c99 $(CFLAGS) -c CRT/kcrt.c -o $@
 	@echo 'CC  $@'
 
+$(DPP_ROOT)/CRT/ntdll_zw_functions$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/ntdll_zw_functions.c
+	$(Q)$(CC) -std=c99 $(CFLAGS) -c CRT/ntdll_zw_functions.c -o $@
+	@echo 'CC  $@'
+
 $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/kcrt.cpp
 	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/kcrt.cpp -o $@
 	@echo 'CXX $@'

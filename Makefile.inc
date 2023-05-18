@@ -90,11 +90,11 @@ EASTL_DEPS := $(wildcard $(DPP_ROOT)/EASTL/source/*.cpp) $(wildcard $(DPP_ROOT)/
 EASTL_BUILDDIR := EASTL-build
 EASTL_STATIC_LIB := $(DPP_ROOT)/$(EASTL_BUILDDIR)/libEASTL.a
 
-DRIVER_CRT_DEPS := $(DPP_ROOT)/CRT/kcrt.c
-DRIVER_CRT := $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o
+DRIVER_CRT_DEPS := $(DPP_ROOT)/CRT/kcrt.c $(DPP_ROOT)/CRT/ntdll_zw_functions.c
+DRIVER_CRT := $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o $(DPP_ROOT)/CRT/ntdll_zw_functions$(NAME_SUFFIX).o
 
-DRIVER_CRTPLUSPLUS_DEPS := $(DPP_ROOT)/CRT/kcrt.cpp $(DPP_ROOT)/CRT/kcrt.c
-DRIVER_CRTPLUSPLUS := $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).opp $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o
+DRIVER_CRTPLUSPLUS_DEPS := $(DPP_ROOT)/CRT/kcrt.cpp $(DPP_ROOT)/CRT/kcrt.c $(DPP_ROOT)/CRT/ntdll_zw_functions.c
+DRIVER_CRTPLUSPLUS := $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).opp $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o $(DPP_ROOT)/CRT/ntdll_zw_functions$(NAME_SUFFIX).o
 
 USER_CRT_DEPS := $(DPP_ROOT)/CRT/ucrt.cpp
 USER_CRT := $(DPP_ROOT)/CRT/ucrt$(NAME_SUFFIX).opp
