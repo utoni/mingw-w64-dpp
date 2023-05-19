@@ -19,7 +19,7 @@ before_script:
   - >
       apt-get install -y -qq \
         coreutils wget tar gzip bzip2 patch cmake make binutils gcc g++ autoconf automake flex bison texinfo \
-        git subversion curl xz-utils osslsigncode libboost-dev
+        git subversion curl xz-utils osslsigncode
 
 makedeps:
   script:

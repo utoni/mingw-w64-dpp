@@ -40,7 +40,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install autoconf automake bison build-essential cmake flex libtool pkg-config gettext libboost-dev
+          sudo apt-get install autoconf automake bison build-essential cmake flex libtool pkg-config gettext
           sudo apt-get install ${{ matrix.compiler }} lcov osslsigncode
       - name: Print Help
         run: |

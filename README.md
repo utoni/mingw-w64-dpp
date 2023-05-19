@@ -18,7 +18,7 @@ Instead either use Zeranoe's build script with `make -C [path-to-this-repo] -f M
 
 1. `examples/dpp-template`: plain and stupid ddk C example
 2. `examples/dpp-template-cplusplus`: same, but written in C++, including a very complex class and some MT
-3. `examples/dpp-template-cplusplus-EASTL`: C++ example w/ (EA)STL integration, basicially everything usable except for SEH and assertions.
+3. `examples/dpp-template-cplusplus-EASTL`: C++ example w/ (EA)STL integration, basicially everything usable except for SEH, VEH and assertions.
 
 `examples/dpp-template-cplusplus-EASTL` supports `BUILD_NATIVE`!
 You can build and run it on your native Linux either with the other examples e.g. `make examples`, build only native executables `make -C examples DPP_ROOT="$(realpath .)" BUILD_NATIVE=1` in the top-level directory or directly build it from the examples directory with `make DPP_ROOT="$(realpath ..)" BUILD_NATIVE=1`.
@@ -188,6 +188,12 @@ The latter one has to be done manually on your target Windows machine by running
 2. `*-sign-driver-on-windows.bat` e.g. `dpp-example-sign-driver-on-windows.bat` (no Administrator permissions required)
 
 *Note*: You still need to call the macro `INSTALL_EXEC_SIGN` from your own Makefile to create/install the batch files in DESTDIR.
+
+## Extending
+
+You may reach a point where system functions, intrinsics or built-ins are required.
+For system functions that can be retrieved via `MmGetSystemRoutineAddress`, you may use `CRT/gen_wrapper.sh` to create wrapper modules. These modules retrieve the desired functions during run-time, but will be available during link-time. An example is `ZwTraceControl`, which gets exported by `ntdll.dll`.
+Eventually missing intrinsics/built-ins should be placed in `CRT/kcrt.c`.
 
 ## Thanks goes to:
 
