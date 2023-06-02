@@ -281,3 +281,13 @@ NTSTATUS __cdecl _CRT_DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE
 
     return retval;
 }
+
+void __cdecl _enable(void)
+{
+    __asm__ __volatile__("sti");
+}
+
+void __cdecl _disable(void)
+{
+    __asm__ __volatile__("cli");
+}
