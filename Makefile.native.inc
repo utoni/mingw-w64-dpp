@@ -18,9 +18,9 @@ INSTALL = install
 CMAKE = cmake
 CC = /usr/bin/cc
 CXX = /usr/bin/c++
-CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
+CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing -Wno-c++20-compat \
 	-m64 -fPIC -fvisibility=hidden \
-	-ffunction-sections -fdata-sections -fno-builtin -ffreestanding \
+	-ffunction-sections -fdata-sections \
 	-I$(DPP_ROOT)/CRT
 ifneq ($(WERROR),)
 CFLAGS += -Werror

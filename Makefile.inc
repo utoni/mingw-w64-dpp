@@ -61,6 +61,7 @@ endif
 
 CXXFLAGS := -fno-exceptions -fno-rtti -fuse-cxa-atexit
 EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/EABase/include/Common \
+	-DEASTL_EABASE_DISABLED=1 \
 	-DEASTL_THREAD_SUPPORT_AVAILABLE=0 \
 	-DEASTL_EXCEPTIONS_ENABLED=0 \
 	-DEASTL_ASSERT_ENABLED=0 \

@@ -32,6 +32,18 @@ typedef UNICODE_STRING * PUNICODE_STRING;
 typedef int NTSTATUS;
 #endif
 
+struct GeneratorUint32
+{
+    uint32_t mValue;
+    GeneratorUint32() : mValue(0)
+    {
+    }
+    uint32_t operator()()
+    {
+        return mValue++;
+    }
+};
+
 using namespace eastl;
 
 // C&P from: https://raw.githubusercontent.com/sidyhe/dxx/ed06aba3b91fe8e101d08c33c26ba73db96acef0/README.md
@@ -95,13 +107,15 @@ void more_stl_test()
 #endif
 
     uniform_int_distribution<std::uint32_t> uid(1, UINT32_MAX);
-    DbgPrint("PRNG: %u\n", uid);
+    GeneratorUint32 g;
+    DbgPrint("PRNG: %u\n", uid(g));
 
     auto lambda = [] { DbgPrint("Hello lambda!\n"); };
     function<void(void)> fn = lambda;
     fn();
 
-    auto lambda2 = [](int n) {
+    auto lambda2 = [](int n)
+    {
         DbgPrint("Hello lambda2, %u!\n", n);
         return n;
     };
