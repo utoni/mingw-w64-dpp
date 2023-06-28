@@ -20,12 +20,15 @@ export SIGNTOOL_PREFIX
 
 examples:
 	$(MAKE) -C examples DPP_ROOT=$(realpath $(DPP_ROOT)) all
+	$(MAKE) -C examples DPP_ROOT=$(realpath $(DPP_ROOT)) BUILD_NATIVE=1 all
 
 examples-clean:
 	$(MAKE) -C examples DPP_ROOT=$(realpath $(DPP_ROOT)) clean
+	$(MAKE) -C examples DPP_ROOT=$(realpath $(DPP_ROOT)) BUILD_NATIVE=1 clean
 
 examples-install:
 	$(MAKE) -C examples DPP_ROOT=$(realpath $(DPP_ROOT)) install
+	$(MAKE) -C examples DPP_ROOT=$(realpath $(DPP_ROOT)) BUILD_NATIVE=1 install
 
 deps:
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps \

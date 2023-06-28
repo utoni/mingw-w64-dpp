@@ -2,34 +2,42 @@ ifndef DPP_ROOT
 $(error DPP_ROOT is undefined, use `make DPP_ROOT=$(realpath ..)`)
 endif
 
+ifndef BUILD_NATIVE
 include $(DPP_ROOT)/Makefile.inc
+OPP_SUFFIX := kopp
+EXE_SUFFIX := sys
+else
+include $(DPP_ROOT)/Makefile.native.inc
+CFLAGS += -DBUILD_USERMODE=1
+OPP_SUFFIX := uopp
+EXE_SUFFIX := run
+endif
 
 1_DRIVER_NAME = dpp-example
 1_OBJECTS = $(1_DRIVER_NAME).o
-1_TARGET = $(1_DRIVER_NAME).sys
+1_TARGET = $(1_DRIVER_NAME).$(EXE_SUFFIX)
 
 2_DRIVER_NAME = dpp-example-cplusplus
-2_OBJECTS = $(2_DRIVER_NAME).opp
-2_TARGET = $(2_DRIVER_NAME).sys
+2_OBJECTS = $(2_DRIVER_NAME).$(OPP_SUFFIX)
+2_TARGET = $(2_DRIVER_NAME).$(EXE_SUFFIX)
 
 3_DRIVER_NAME = dpp-example-cplusplus-EASTL
-3_OBJECTS = $(3_DRIVER_NAME).opp
-3_TARGET = $(3_DRIVER_NAME).sys
+3_OBJECTS = $(3_DRIVER_NAME).$(OPP_SUFFIX)
+3_TARGET = $(3_DRIVER_NAME).$(EXE_SUFFIX)
 
-ifdef BUILD_NATIVE
-$(error There is nothing the build as native executable here..)
-endif
-
+ifndef BUILD_NATIVE
 all: $(1_TARGET) $(2_TARGET) $(3_TARGET)
-
-include $(DPP_ROOT)/Makefile.inc
+else
+all: $(3_TARGET)
+endif
 
 %.o: %.c
 	$(call BUILD_C_OBJECT,$<,$@)
 
-%.opp: %.cpp
+%.$(OPP_SUFFIX): %.cpp
 	$(call BUILD_CPP_OBJECT,$<,$@)
 
+ifndef BUILD_NATIVE
 # simple C driver
 $(1_TARGET): $(1_OBJECTS)
 	$(call LINK_C_KERNEL_TARGET,$(1_OBJECTS),$@)
@@ -49,6 +57,28 @@ install: all
 	$(INSTALL) $(1_DRIVER_NAME).bat $(DESTDIR)
 	$(INSTALL) $(2_DRIVER_NAME).bat $(DESTDIR)
 	$(INSTALL) $(3_DRIVER_NAME).bat $(DESTDIR)
+else
+$(1_TARGET):
+	$(error Target $(1_TARGET) does not support BUILD_NATIVE)
+
+# C++ driver w/ MT
+$(2_TARGET):
+	$(error Target $(2_TARGET) does not support BUILD_NATIVE)
+
+# C++ driver w/ EASTL
+$(3_TARGET): $(3_OBJECTS)
+	$(call LINK_CPP_USER_TARGET,$(3_OBJECTS),$@)
+
+install: all
+	$(call INSTALL_EXEC,$(3_TARGET))
+endif
+
+$(1_DRIVER_NAME): $(1_TARGET)
+	@echo 'Target compiled/linked: $(1_TARGET)'
+$(2_DRIVER_NAME): $(2_TARGET)
+	@echo 'Target compiled/linked: $(2_TARGET)'
+$(3_DRIVER_NAME): $(3_TARGET)
+	@echo 'Target compiled/linked: $(3_TARGET)'
 
 clean:
 	rm -f $(1_OBJECTS) $(1_TARGET) $(1_TARGET).map

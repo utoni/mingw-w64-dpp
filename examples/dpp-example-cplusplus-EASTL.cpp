@@ -1,3 +1,4 @@
+#ifndef BUILD_USERMODE
 #include <ntddk.h>
 
 #include <cstdint>
@@ -15,55 +16,89 @@
 #include <EASTL/unordered_set.h>
 #include <EASTL/vector.h>
 
+using namespace eastl;
+#else
+#include <cstdint>
+#include <cstdio>
+
+#include <algorithm>
+#include <functional>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+#include <boost/scoped_ptr.hpp>
+
+#define DbgPrint printf
+
+using namespace std;
+using boost::scoped_ptr;
+
+typedef struct
+{
+} DRIVER_OBJECT;
+typedef DRIVER_OBJECT * PDRIVER_OBJECT;
+typedef struct
+{
+} UNICODE_STRING;
+typedef UNICODE_STRING * PUNICODE_STRING;
+typedef int NTSTATUS;
+#endif
+
 // C&P from: https://raw.githubusercontent.com/sidyhe/dxx/ed06aba3b91fe8e101d08c33c26ba73db96acef0/README.md
 void stl_test()
 {
-    eastl::make_unique<DRIVER_OBJECT>();
-    eastl::make_shared<UNICODE_STRING>();
-    eastl::scoped_ptr<double> dptr(new double(3.6));
+    make_unique<DRIVER_OBJECT>();
+    make_shared<UNICODE_STRING>();
+    scoped_ptr<double> dptr(new double(3.6));
 
-    eastl::set<int> set_test;
+    set<int> set_test;
     set_test.insert(1);
     set_test.insert(3);
     set_test.insert(5);
     set_test.erase(1);
 
-    eastl::map<int, int> map_test;
+    map<int, int> map_test;
     map_test[0] = 1;
     map_test[10] = 11;
     map_test[20] = 12;
     map_test.erase(11);
 
-    eastl::vector<int> vec_test;
+    vector<int> vec_test;
     vec_test.push_back(2);
     vec_test.push_back(3);
     vec_test.push_back(1);
-    eastl::stable_sort(vec_test.begin(), vec_test.end(), eastl::less<int>());
+    stable_sort(vec_test.begin(), vec_test.end(), less<int>());
     for (auto e : vec_test)
     {
         DbgPrint("%d\n", e);
     }
 
-    eastl::string s;
+    string s;
     s = "This a string";
     s.append(" ");
     s.append("any");
     DbgPrint("%s\n", s.c_str());
 
-    eastl::wstring ws;
+    wstring ws;
     ws = L"wide string";
     ws.clear();
 
-    eastl::unordered_set<float> us_test;
+    unordered_set<float> us_test;
     us_test.insert(333);
 
-    eastl::unordered_map<double, eastl::string> um_test;
-    um_test.insert(eastl::make_pair(6.6, "9.9"));
+    unordered_map<double, string> um_test;
+    um_test.insert(make_pair(6.6, "9.9"));
 }
 
 void more_stl_test()
 {
-    eastl::hash_map<int, eastl::string> hm;
+#ifndef BUILD_USERMODE
+    hash_map<int, string> hm;
 
     hm[0] = "test1";
     hm[10] = "test2";
@@ -72,22 +107,23 @@ void more_stl_test()
     {
         DbgPrint("%s\n", s.second.c_str());
     }
+#endif
 
-    eastl::uniform_int_distribution<std::uint32_t> uid(1, UINT32_MAX);
+    uniform_int_distribution<std::uint32_t> uid(1, UINT32_MAX);
     DbgPrint("PRNG: %u\n", uid);
 
     auto lambda = [] { DbgPrint("Hello lambda!\n"); };
-    eastl::function<void(void)> fn = lambda;
+    function<void(void)> fn = lambda;
     fn();
 
     auto lambda2 = [](int n) {
         DbgPrint("Hello lambda2, %u!\n", n);
         return n;
     };
-    eastl::function<int(int)> fn2 = lambda2;
+    function<int(int)> fn2 = lambda2;
     fn2(1337);
 
-    eastl::vector<std::uint32_t> fill_me;
+    vector<std::uint32_t> fill_me;
     for (auto i = UINT16_MAX; i > 0; --i)
     {
         fill_me.push_back(i);
@@ -97,7 +133,7 @@ void more_stl_test()
 
 extern "C"
 {
-
+#ifndef BUILD_USERMODE
     DRIVER_INITIALIZE DriverEntry;
     DRIVER_UNLOAD DriverUnload;
 
@@ -114,10 +150,21 @@ extern "C"
         return STATUS_SUCCESS;
     }
 
-    VOID DriverUnload(PDRIVER_OBJECT DriverObject)
+    void DriverUnload(PDRIVER_OBJECT DriverObject)
     {
         (void)DriverObject;
 
         DbgPrint("%s\n", "Bye ring0!");
     }
+#else
+    int main()
+    {
+        DbgPrint("%s\n", "Hello user!");
+
+        stl_test();
+        more_stl_test();
+
+        return 0;
+    }
+#endif
 }

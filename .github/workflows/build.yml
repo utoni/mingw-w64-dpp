@@ -40,7 +40,7 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install autoconf automake cmake libtool pkg-config gettext flex bison
+          sudo apt-get install autoconf automake bison build-essential cmake flex libtool pkg-config gettext libboost-dev
           sudo apt-get install ${{ matrix.compiler }} lcov osslsigncode
       - name: Print Help
         run: |
@@ -56,6 +56,9 @@ jobs:
           make examples-install DESTDIR=$(realpath _install)
           ls -alh _install
           test -r _install/codesign-ca-cert.crt -a -r _install/dpp-example.bat -a -r _install/dpp-example-cplusplus.bat -a -r _install/dpp-example-cplusplus-EASTL.bat -a -r _install/dpp-example.sys -a -r _install/dpp-example-cplusplus.sys -a -r _install/dpp-example-cplusplus-EASTL.sys
+      - name: Test
+        run: |
+          ./_install/dpp-example-cplusplus-EASTL.run
       - name: Cleanup
         run: |
           make deps-clean

@@ -20,6 +20,9 @@ Instead either use Zeranoe's build script with `make -C [path-to-this-repo] -f M
 2. `examples/dpp-template-cplusplus`: same, but written in C++, including a very complex class and some MT
 3. `examples/dpp-template-cplusplus-EASTL`: C++ example w/ (EA)STL integration, basicially everything usable except for SEH and assertions.
 
+`examples/dpp-template-cplusplus-EASTL` supports `BUILD_NATIVE`!
+You can build and run it on your native Linux either with the other examples e.g. `make examples`, build only native executables `make -C examples DPP_ROOT="$(realpath .)" BUILD_NATIVE=1` in the top-level directory or directly build it from the examples directory with `make DPP_ROOT="$(realpath ..)" BUILD_NATIVE=1`.
+
 ## Build and Test
 
 Build all examples with a Mingw64 toolchain using Zeranoe's build script:

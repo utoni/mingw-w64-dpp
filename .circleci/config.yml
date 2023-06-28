@@ -13,7 +13,7 @@ jobs:
           apt-get install -y -qq \
           coreutils wget tar gzip bzip2 patch cmake make binutils gcc g++ autoconf automake flex bison texinfo \
           git subversion curl xz-utils osslsigncode \
-          binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-x86-64-dev
+          binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-x86-64-dev libboost-dev
       - run: |
           make deps \
             WERROR=1 JOBS=4 Q= \
@@ -38,7 +38,10 @@ jobs:
                -r _install/dpp-example-cplusplus-EASTL.bat -a \
                -r _install/dpp-example.sys -a \
                -r _install/dpp-example-cplusplus.sys -a \
-               -r _install/dpp-example-cplusplus-EASTL.sys
+               -r _install/dpp-example-cplusplus-EASTL.sys -a \
+               -r _install/dpp-example-cplusplus-EASTL.run
+      - run: |
+          ./_install/dpp-example-cplusplus-EASTL.run
       - run: |
           wget 'https://github.com/utoni/mingw-w64-build-ng/releases/download/v1.0/mingw-w64-toolchain.tbz2' -O ./mingw-w64-toolchain.tbz2
       - run: |
