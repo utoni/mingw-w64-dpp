@@ -1,0 +1,16 @@
+@echo off
+
+set MYDIR=%~dp0
+set FILENAME_PREFIX=mingw-w64-dpp
+set DRIVER={{ DRIVER_NAME }}
+
+where signtool.exe >nul 2>&1
+IF %ERRORLEVEL% NEQ 0 (
+    echo ERROR: signtool.exe not found, pleae add it to your PATH
+    pause
+    exit /b 1
+)
+
+signtool.exe sign /v /f "%MYDIR%/%FILENAME_PREFIX%.pfx" "%MYDIR%/%DRIVER%"
+
+pause

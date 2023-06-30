@@ -178,6 +178,17 @@ $(USERSPACE_TARGET): $(USERSPACE_OBJECTS)
 
 [A simple and stupid project example.](https://github.com/utoni/mingw-w64-driver)
 
+## Driver Signing
+
+Driver signing can be done in two ways. Using a native `osslsigncode` executable or sign it manually on your Windows platform.
+The first one is always done by calling the macro `INSTALL_EXEC_SIGN` from your own Makefile.
+The latter one has to be done manually on your target Windows machine by running:
+
+1. `create_codesign_ca.bat` in DESTDIR (Administrator permission required to import CA/CERTs to the Windows certificate storage
+2. `*-sign-driver-on-windows.bat` e.g. `dpp-example-sign-driver-on-windows.bat` (no Administrator permissions required)
+
+*Note*: You still need to call the macro `INSTALL_EXEC_SIGN` from your own Makefile to create/install the batch files in DESTDIR.
+
 ## Thanks goes to:
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script

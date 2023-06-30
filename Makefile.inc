@@ -40,6 +40,7 @@ endif
 DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX) $(LOCAL_MINGW64_AR) $(LOCAL_MINGW64_RC)
 
 INSTALL = install
+SED = sed
 CMAKE = cmake
 CC = $(LOCAL_MINGW64_CC)
 CXX = $(LOCAL_MINGW64_CXX)
@@ -226,8 +227,11 @@ define INSTALL_EXEC_SIGN
 		$(SIGNTOOL) sign -pkcs12 '$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-code.p12' \
 			-in "$$target" \
 			-out "$(DESTDIR)/$$target"; \
+		$(INSTALL) "$(DPP_ROOT)/sign-driver-on-windows.bat.in" "$(DESTDIR)/$$(basename $$target .sys)-sign-driver-on-windows.bat"; \
+		$(SED) -i -e "s/{{\s*DRIVER_NAME\s*}}/$$target/g" "$(DESTDIR)/$$(basename $$target .sys)-sign-driver-on-windows.bat"; \
 	done
 	$(INSTALL) "$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-ca-cert.pem" '$(DESTDIR)/$(SIGNTOOL_PREFIX)-ca-cert.crt'
+	$(INSTALL) "$(DPP_ROOT)/create_codesign_ca.bat" '$(DESTDIR)/create-codesign-ca-on-windows.bat'
 endef
 
 define INSTALL_HEADERS
