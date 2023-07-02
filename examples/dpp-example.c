@@ -10,6 +10,12 @@ NTSTATUS DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE_STRING Regis
 
     DbgPrint("%s\n", "Hello ring0!");
 
+    // This is bad. Please do not call _disable/_enable in the DriverEntry.
+    DbgPrint("%s\n", "Disable/Enable Interrupts!");
+    _disable();
+    _enable();
+    DbgPrint("%s\n", "Done with Disable/Enable Interrupts!");
+
     return STATUS_SUCCESS;
 }
 

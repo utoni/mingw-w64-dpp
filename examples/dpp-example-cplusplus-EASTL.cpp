@@ -1,5 +1,6 @@
 #ifndef BUILD_USERMODE
 #include <ntddk.h>
+#endif
 
 #include <cstdint>
 
@@ -16,28 +17,10 @@
 #include <EASTL/unordered_set.h>
 #include <EASTL/vector.h>
 
-using namespace eastl;
-#else
-#include <cstdint>
+#ifdef BUILD_USERMODE
 #include <cstdio>
 
-#include <algorithm>
-#include <functional>
-#include <map>
-#include <memory>
-#include <set>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
-#include <boost/scoped_ptr.hpp>
-
 #define DbgPrint printf
-
-using namespace std;
-using boost::scoped_ptr;
-
 typedef struct
 {
 } DRIVER_OBJECT;
@@ -48,6 +31,8 @@ typedef struct
 typedef UNICODE_STRING * PUNICODE_STRING;
 typedef int NTSTATUS;
 #endif
+
+using namespace eastl;
 
 // C&P from: https://raw.githubusercontent.com/sidyhe/dxx/ed06aba3b91fe8e101d08c33c26ba73db96acef0/README.md
 void stl_test()
