@@ -5,11 +5,11 @@
 
 extern "C" void InterceptorThreadRoutine(PVOID threadContext);
 
-typedef NTSTATUS (*threadRoutine_t)(PVOID);
-typedef NTSTATUS (*workerRoutine_t)(PSLIST_ENTRY);
-
 namespace DriverThread
 {
+class WorkItem;
+typedef NTSTATUS (*threadRoutine_t)(PVOID);
+typedef NTSTATUS (*workerRoutine_t)(WorkItem * item);
 
 class Mutex
 {
@@ -79,6 +79,13 @@ private:
     KSEMAPHORE m_semaphore;
 };
 
+class WorkItem
+{
+public:
+    SLIST_ENTRY QueueEntry;
+    PSLIST_ENTRY WorkListEntry;
+};
+
 class WorkQueue
 {
 public:
@@ -86,7 +93,7 @@ public:
     ~WorkQueue(void);
     NTSTATUS Start(workerRoutine_t workerRoutine);
     void Stop(void);
-    void Enqueue(PSLIST_ENTRY workItem);
+    void Enqueue(WorkItem * item);
 
 private:
     Mutex m_mutex;

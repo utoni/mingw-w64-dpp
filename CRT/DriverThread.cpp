@@ -192,9 +192,9 @@ void DriverThread::WorkQueue::Stop(void)
     KeSetEvent(&m_wakeEvent, 0, FALSE);
 }
 
-void DriverThread::WorkQueue::Enqueue(PSLIST_ENTRY workItem)
+void DriverThread::WorkQueue::Enqueue(WorkItem * item)
 {
-    if (InterlockedPushEntrySList(&m_work, workItem) == NULL)
+    if (InterlockedPushEntrySList(&m_work, &item->QueueEntry) == NULL)
     {
         // Work queue was empty. So, signal the work queue event in case the
         // worker thread is waiting on the event for more operations.
@@ -243,7 +243,8 @@ NTSTATUS DriverThread::WorkQueue::WorkerInterceptorRoutine(PVOID workerContext)
         {
             PSLIST_ENTRY arg = listEntry;
             listEntry = listEntry->Next;
-            if (wq->m_workerRoutine(arg) != STATUS_SUCCESS)
+            DriverThread::WorkItem * wi = CONTAINING_RECORD(arg, DriverThread::WorkItem, QueueEntry);
+            if (wq->m_workerRoutine(wi) != STATUS_SUCCESS)
             {
                 wq->m_stopWorker = TRUE;
             }
