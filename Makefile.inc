@@ -84,21 +84,17 @@ DRIVER_LIBS := -lntoskrnl -lhal
 USER_LDFLAGS := -Wl,--dynamicbase -Wl,--nxcompat -Wl,--gc-sections
 USER_LIBS :=
 
-DRIVER_ADDITIONAL_DEPS := $(DPP_ROOT)/CRT/DriverThread.cpp $(DPP_ROOT)/CRT/DriverThread.hpp
-DRIVER_ADDITIONAL_OBJS := $(DPP_ROOT)/CRT/DriverThread$(NAME_SUFFIX).opp
-
-EASTL_DEPS := $(wildcard $(DPP_ROOT)/EASTL/source/*.cpp) $(wildcard $(DPP_ROOT)/EASTL/include/EASTL/*.h)
 EASTL_BUILDDIR := EASTL-build
-EASTL_STATIC_LIB := $(DPP_ROOT)/$(EASTL_BUILDDIR)/libEASTL.a
 
-DRIVER_CRT_DEPS := $(DPP_ROOT)/CRT/kcrt.c $(DPP_ROOT)/CRT/ntdll_zw_functions.c
-DRIVER_CRT := $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o $(DPP_ROOT)/CRT/ntdll_zw_functions$(NAME_SUFFIX).o
-
-DRIVER_CRTPLUSPLUS_DEPS := $(DPP_ROOT)/CRT/kcrt.cpp $(DPP_ROOT)/CRT/kcrt.c $(DPP_ROOT)/CRT/ntdll_zw_functions.c
-DRIVER_CRTPLUSPLUS := $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).opp $(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o $(DPP_ROOT)/CRT/ntdll_zw_functions$(NAME_SUFFIX).o
-
-USER_CRT_DEPS := $(DPP_ROOT)/CRT/ucrt.cpp
-USER_CRT := $(DPP_ROOT)/CRT/ucrt$(NAME_SUFFIX).opp
+LIBCRT_BUILD_DIR := $(DPP_ROOT)/CRT-build
+LIBCRT_OBJECTS := \
+	$(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).o \
+	$(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o
+LIBCXXRT_OBJECTS := \
+	$(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).opp \
+	$(LIBCRT_BUILD_DIR)/DriverThread$(NAME_SUFFIX).opp
+LIBCRT_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libcrt.a
+LIBCXXRT_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libcxxrt.a
 
 is_set = \
 	$(if $1,, \
@@ -113,11 +109,10 @@ define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(CXX))
 	$(call path_exists,$(RC))
 	$(call path_exists,$(DDK_INCLUDE_DIR))
-	$(call path_exists,$(DRIVER_ADDITIONAL_OBJS))
 	$(call path_exists,$(EASTL_STATIC_LIB))
-	$(call path_exists,$(DRIVER_CRT))
-	$(call path_exists,$(DRIVER_CRTPLUSPLUS))
-	$(call path_exists,$(USER_CRT))
+	$(call path_exists,$(LIBCRT_STATIC_LIB))
+	$(call path_exists,$(LIBCXXRT_STATIC_LIB))
+	$(call path_exists,$(LIBUSERCRT_STATIC_LIB))
 endef
 
 define BUILD_C_OBJECT
@@ -146,7 +141,7 @@ define LINK_C_KERNEL_TARGET
 		-Wl,-Map='$(2).map' \
 		-o '$(2)' \
 		$(1) \
-		$(DRIVER_CRT) \
+		$(LIBCRT_STATIC_LIB) \
 		$(DRIVER_LIBS) \
 		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
@@ -161,7 +156,7 @@ define LINK_C_USER_TARGET
 		-o '$(2)' \
 		$(1) \
 		$(EASTL_STATIC_LIB) \
-		$(USER_LIBS) \
+		$(LIBUSERCRT_STATIC_LIB) \
 		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
 endef
@@ -178,9 +173,9 @@ define LINK_CPP_KERNEL_TARGET
 		-Wl,-Map='$(2).map' \
 		-o '$(2)' \
 		$(1) \
-		$(DRIVER_ADDITIONAL_OBJS) \
-		$(DRIVER_CRTPLUSPLUS) \
 		$(EASTL_STATIC_LIB) \
+		$(LIBCRT_STATIC_LIB) \
+		$(LIBCXXRT_STATIC_LIB) \
 		$(DRIVER_LIBS) \
 		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
@@ -197,8 +192,8 @@ define LINK_CPP_USER_TARGET
 		$(USER_LDFLAGS) \
 		-o '$(2)' \
 		$(1) \
-		$(USER_CRT) \
 		$(EASTL_STATIC_LIB) \
+		$(LIBUSERCRT_STATIC_LIB) \
 		$(USER_LIBS) \
 		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
@@ -245,7 +240,7 @@ define INSTALL_HEADERS
 	done
 endef
 
-ifneq ($(LOCAL_MINGW64_AR),)
+ifneq ($(AR),)
 define PACKAGE
 	$(call is_set,$(1),First argument: Library name missing)
 	$(call is_set,$(2),Second argument: Object files missing)
@@ -253,6 +248,10 @@ define PACKAGE
 	mkdir -p '$(3)/lib'
 	$(AR) -rsv '$(3)/lib/lib$(1).a' $(2)
 	tar --no-acls --no-selinux --no-xattrs --transform 's,^$(3),deps,' -cvjf '$(1).dpp' '$(3)'
+endef
+else
+define PACKAGE
+	$(error The tool AR is required for this operation.)
 endef
 endif
 

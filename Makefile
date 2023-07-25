@@ -44,6 +44,9 @@ deps-clean:
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps clean
 	$(MAKE) -C $(DPP_ROOT) BUILD_NATIVE=1 -f Makefile.deps clean
 
+package:
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps package
+
 help:
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps help
 

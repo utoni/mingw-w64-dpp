@@ -16,25 +16,58 @@ else
 include Makefile.native.inc
 endif
 
+EASTL_DEPS := $(wildcard $(DPP_ROOT)/EASTL/source/*.cpp) $(wildcard $(DPP_ROOT)/EASTL/include/EASTL/*.h)
+EASTL_STATIC_LIB := $(DPP_ROOT)/$(EASTL_BUILDDIR)/libEASTL.a
+
+LIBUSERCRT_OBJECTS := $(LIBCRT_BUILD_DIR)/ucrt$(NAME_SUFFIX).opp
+LIBUSERCRT_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libusercrt.a
+
 all: deps
 
-$(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/kcrt.c
+$(LIBCRT_BUILD_DIR):
+	$(Q)mkdir -p '$(LIBCRT_BUILD_DIR)'
+
+$(LIBCRT_STATIC_LIB): $(LIBCRT_BUILD_DIR) $(LIBCRT_OBJECTS)
+ifneq ($(Q),@)
+	$(Q)$(AR) -rsv '$@' $(LIBCRT_OBJECTS)
+else
+	$(Q)$(AR) -rs '$@' $(LIBCRT_OBJECTS) 2>/dev/null >/dev/null
+endif
+	@echo 'AR  $@'
+
+$(LIBCXXRT_STATIC_LIB): $(LIBCRT_BUILD_DIR) $(LIBCXXRT_OBJECTS)
+ifneq ($(Q),@)
+	$(Q)$(AR) -rsv '$@' $(LIBCXXRT_OBJECTS)
+else
+	$(Q)$(AR) -rs '$@' $(LIBCXXRT_OBJECTS) 2>/dev/null >/dev/null
+endif
+	@echo 'AR  $@'
+
+$(LIBUSERCRT_STATIC_LIB): $(LIBCRT_BUILD_DIR) $(LIBUSERCRT_OBJECTS)
+ifneq ($(Q),@)
+	$(Q)$(AR) -rsv '$@' $(LIBUSERCRT_OBJECTS)
+else
+	$(Q)$(AR) -rs '$@' $(LIBUSERCRT_OBJECTS) 2>/dev/null >/dev/null
+endif
+	@echo 'AR  $@'
+
+$(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/kcrt.c
 	$(Q)$(CC) -std=c99 $(CFLAGS) -c CRT/kcrt.c -o $@
 	@echo 'CC  $@'
 
-$(DPP_ROOT)/CRT/ntdll_zw_functions$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/ntdll_zw_functions.c
+$(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/ntdll_zw_functions.c
 	$(Q)$(CC) -std=c99 $(CFLAGS) -c CRT/ntdll_zw_functions.c -o $@
 	@echo 'CC  $@'
 
-$(DPP_ROOT)/CRT/kcrt$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/kcrt.cpp
+$(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/kcrt.cpp
 	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/kcrt.cpp -o $@
 	@echo 'CXX $@'
 
-$(DPP_ROOT)/CRT/ucrt$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/ucrt.cpp
+$(LIBCRT_BUILD_DIR)/ucrt$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/ucrt.cpp
 	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/ucrt.cpp -o $@
 	@echo 'CXX $@'
 
-$(DPP_ROOT)/CRT/DriverThread$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/DriverThread.cpp $(DPP_ROOT)/CRT/DriverThread.hpp
+$(LIBCRT_BUILD_DIR)/DriverThread$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/DriverThread.cpp $(DPP_ROOT)/CRT/DriverThread.hpp
 	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/DriverThread.cpp -o $@
 	@echo 'CXX $@'
 
@@ -100,10 +133,9 @@ deps-build: \
 	$(LOCAL_MINGW64_BUILD_SCRIPT) \
 	$(LOCAL_MINGW64_CC) \
 	$(EASTL_STATIC_LIB) \
-	$(DRIVER_ADDITIONAL_OBJS) \
-	$(DRIVER_CRT) \
-	$(DRIVER_CRTPLUSPLUS) \
-	$(USER_CRT) \
+	$(LIBCRT_STATIC_LIB) \
+	$(LIBCXXRT_STATIC_LIB) \
+	$(LIBUSERCRT_STATIC_LIB) \
 	$(SIGNTOOL_PREFIX)
 
 deps: deps-print-local-notice deps-build
@@ -124,21 +156,35 @@ $(SIGNTOOL_PREFIX)-code.p12:
 
 $(SIGNTOOL_PREFIX): $(SIGNTOOL_PREFIX)-code.p12
 
+package-mingw: deps
+	@echo 'Adding mingw build directories..'
+	tar --owner=0 --group=0 --no-same-owner --no-same-permissions \
+		--no-acls --no-selinux --no-xattrs \
+		--mtime ./Makefile.deps -rf mingw-w64-dpp.tar $(patsubst $(DPP_ROOT)/%,%,$(EASTL_STATIC_LIB)) \
+		--transform 's,^,mingw-w64-dpp/,'
+	tar --owner=0 --group=0 --no-same-owner --no-same-permissions \
+		--no-acls --no-selinux --no-xattrs \
+		--mtime ./Makefile.deps -rf mingw-w64-dpp.tar $(patsubst $(DPP_ROOT)/%,%,$(LIBCRT_BUILD_DIR)) \
+		--transform 's,^,mingw-w64-dpp/,'
+	tar --owner=0 --group=0 --no-same-owner --no-same-permissions \
+		--no-acls --no-selinux --no-xattrs \
+		--mtime ./Makefile.deps -rf mingw-w64-dpp.tar $(SYSROOT) \
+		--transform 's,^,mingw-w64-dpp/,'
+
 distclean: clean
 	rm -f $(SIGNTOOL_PREFIX)-ca-* $(SIGNTOOL_PREFIX)-code*
 	rm -rf $(LOCAL_MINGW64_BUILD_DIR)
 	git submodule deinit --all
 
 clean:
-	rm -f $(DRIVER_CRT) $(DRIVER_CRTPLUSPLUS) $(USER_CRT) $(EASTL_STATIC_LIB)
-	rm -f $(DRIVER_ADDITIONAL_OBJS)
-	rm -rf $(EASTL_BUILDDIR)
+	rm -f $(LIBCRT_STATIC_LIB) $(LIBCXXRT_STATIC_LIB) $(LIBUSERCRT_STATIC_LIB) $(EASTL_STATIC_LIB)
+	rm -rf $(LIBCRT_BUILD_DIR) $(EASTL_BUILDDIR)
 
 else
 
 deps-build: \
 	$(EASTL_STATIC_LIB) \
-	$(USER_CRT)
+	$(LIBUSERCRT_STATIC_LIB)
 
 deps: deps-build
 
@@ -152,13 +198,31 @@ $(EASTL_STATIC_LIB): $(CXX) $(EASTL_DEPS)
 			-DCMAKE_CXX_FLAGS='$(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS)' && \
 		$(MAKE) $(CMAKE_Q)
 
+package-native: deps
+	@echo 'Adding native build directories..'
+	tar --owner=0 --group=0 --no-same-owner --no-same-permissions \
+		--no-acls --no-selinux --no-xattrs \
+		--mtime ./Makefile.deps -rf mingw-w64-dpp.tar $(patsubst $(DPP_ROOT)/%,%,$(EASTL_STATIC_LIB)) \
+		--transform 's,^,mingw-w64-dpp/,'
+	tar --owner=0 --group=0 --no-same-owner --no-same-permissions \
+		--no-acls --no-selinux --no-xattrs \
+		--mtime ./Makefile.deps -rf mingw-w64-dpp.tar $(patsubst $(DPP_ROOT)/%,%,$(LIBCRT_BUILD_DIR)) \
+		--transform 's,^,mingw-w64-dpp/,'
+
 distclean: clean
 
 clean:
-	rm -f $(USER_CRT) $(EASTL_STATIC_LIB)
-	rm -rf $(EASTL_BUILDDIR)
+	rm -f $(LIBUSERCRT_STATIC_LIB) $(EASTL_STATIC_LIB)
+	rm -rf $(LIBCRT_BUILD_DIR) $(EASTL_BUILDDIR)
 
 endif
+
+package:
+	@echo 'Creating package containing repository sources and binary mingw64 toolchain..'
+	git archive --prefix 'mingw-w64-dpp/' -o mingw-w64-dpp.tar HEAD
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps package-mingw
+	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps BUILD_NATIVE=1 package-native
+	bzip2 -c mingw-w64-dpp.tar >mingw-w64-dpp.tar.bz2
 
 help:
 	@echo '[Makefile.deps]'
@@ -167,5 +231,5 @@ help:
 	@echo -e '\tWERROR          = $(WERROR)'
 	@echo -e '\tQ               = $(Q)'
 
-.PHONY: all deps-print-local-notice deps-build deps distclean clean help
+.PHONY: all deps-print-local-notice deps-build deps package distclean clean help
 .DEFAULT_GOAL := all

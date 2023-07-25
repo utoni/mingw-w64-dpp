@@ -36,12 +36,8 @@ EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/
 	-Wno-deprecated-copy
 USER_LDFLAGS := -Wl,--gc-sections
 
-EASTL_DEPS := $(wildcard $(DPP_ROOT)/EASTL/source/*.cpp) $(wildcard $(DPP_ROOT)/EASTL/include/EASTL/*.h)
 EASTL_BUILDDIR := EASTL-native-build
-EASTL_STATIC_LIB := $(DPP_ROOT)/$(EASTL_BUILDDIR)/libEASTL.a
-
-USER_CRT_DEPS := $(DPP_ROOT)/CRT/ucrt.cpp
-USER_CRT := $(DPP_ROOT)/CRT/ucrt$(NAME_SUFFIX).opp
+LIBCRT_BUILD_DIR := $(DPP_ROOT)/CRT-native-build
 
 is_set = \
 	$(if $1,, \
@@ -55,7 +51,7 @@ define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(CC))
 	$(call path_exists,$(CXX))
 	$(call path_exists,$(EASTL_STATIC_LIB))
-	$(call path_exists,$(USER_CRT))
+	$(call path_exists,$(LIBUSERCRT_STATIC_LIB))
 endef
 
 define BUILD_C_OBJECT
@@ -105,8 +101,8 @@ define LINK_CPP_USER_TARGET
 		$(USER_LDFLAGS) \
 		-o '$(2)' \
 		$(1) \
-		$(USER_CRT) \
-		$(EASTL_STATIC_LIB)
+		$(EASTL_STATIC_LIB) \
+		$(LIBUSERCRT_STATIC_LIB)
 	@echo 'LD  $(2)'
 endef
 
