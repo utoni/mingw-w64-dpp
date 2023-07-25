@@ -59,7 +59,15 @@ jobs:
       - name: Test
         run: |
           ./_install/dpp-example-cplusplus-EASTL.run
+      - name: Package
+        run: |
+          make package
       - name: Cleanup
         run: |
           make deps-clean
           make deps-distclean
+      - name: Upload Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: mingw-w64-dpp-package
+          path: mingw-w64-dpp.tar
