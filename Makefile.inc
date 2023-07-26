@@ -108,9 +108,19 @@ path_exists = \
 	$(error ERROR: $1 does not exist, run `make -C $(DPP_ROOT) deps` first.))
 
 define CHECK_REQUIRED_PATHS
+	$(call is_set,$(CC),Makefile argument CC missing)
+	$(call is_set,$(CXX),Makefile argument CXX missing)
+	$(call is_set,$(RC),Makefile argument RC missing)
+	$(call is_set,$(AR),Makefile argument AR missing)
+	$(call is_set,$(DDK_INCLUDE_DIR),Makefile argument DDK_INCLUDE_DIR missing)
+	$(call is_set,$(EASTL_STATIC_LIB),Makefile argument EASTL_STATIC_LIB missing)
+	$(call is_set,$(LIBCRT_STATIC_LIB),Makefile argument LIBCRT_STATIC_LIB missing)
+	$(call is_set,$(LIBCXXRT_STATIC_LIB),Makefile argument LIBCXXRT_STATIC_LIB missing)
+	$(call is_set,$(LIBUSERCRT_STATIC_LIB),Makefile argument LIBUSERCRT_STATIC_LIB missing)
 	$(call path_exists,$(CC))
 	$(call path_exists,$(CXX))
 	$(call path_exists,$(RC))
+	$(call path_exists,$(AR))
 	$(call path_exists,$(DDK_INCLUDE_DIR))
 	$(call path_exists,$(EASTL_STATIC_LIB))
 	$(call path_exists,$(LIBCRT_STATIC_LIB))
@@ -243,7 +253,6 @@ define INSTALL_HEADERS
 	done
 endef
 
-ifneq ($(AR),)
 define PACKAGE
 	$(call is_set,$(1),First argument: Library name missing)
 	$(call is_set,$(2),Second argument: Object files missing)
@@ -252,11 +261,6 @@ define PACKAGE
 	$(AR) -rsv '$(3)/lib/lib$(1).a' $(2)
 	tar --no-acls --no-selinux --no-xattrs --transform 's,^$(3),deps,' -cvjf '$(1).dpp' '$(3)'
 endef
-else
-define PACKAGE
-	$(error The tool AR is required for this operation.)
-endef
-endif
 
 define HELP_MAKE_OPTIONS
 	@echo 'Common make options for Makefile.inc:'

@@ -10,8 +10,8 @@ cache:
     - mingw-w64-sysroot/
     - EASTL-build/libEASTL.a
     - EASTL-native-build/libEASTL.a
-    - CRT/*.o
-    - CRT/*.opp
+    - CRT-build/*
+    - CRT-native-build/*
 
 before_script:
   - export DEBIAN_FRONTEND=noninteractive
@@ -28,7 +28,10 @@ makedeps:
     - >
         { test -x mingw-w64-sysroot/x86_64/bin/x86_64-w64-mingw32-gcc && \
           test -x mingw-w64-sysroot/x86_64/bin/x86_64-w64-mingw32-g++ && \
-          test -r CRT/kcrt.opp && \
+          test -r CRT-build/libcrt.a && \
+          test -r CRT-build/libcrt.a && \
+          test -r CRT-build/libcxxrt.a && \
+          test -r CRT-build/libusercrt.a && \
           test -r EASTL-build/libEASTL.a && \
           test -r EASTL-native-build/libEASTL.a; } || \
         { make deps JOBS=${BUILDJOBS:-4} Q= || { cat mingw-w64-sysroot/build.log; false; }; }

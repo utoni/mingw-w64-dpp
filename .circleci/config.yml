@@ -20,6 +20,7 @@ jobs:
             LOCAL_MINGW64_CC=/usr/bin/x86_64-w64-mingw32-gcc \
             LOCAL_MINGW64_CXX=/usr/bin/x86_64-w64-mingw32-g++ \
             LOCAL_MINGW64_RC=/usr/bin/x86_64-w64-mingw32-windres \
+            LOCAL_MINGW64_AR=/usr/bin/x86_64-w64-mingw32-ar \
             DDK_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include/ddk
       - run: |
           test -r EASTL-build/libEASTL.a
@@ -29,6 +30,7 @@ jobs:
             LOCAL_MINGW64_CC=/usr/bin/x86_64-w64-mingw32-gcc \
             LOCAL_MINGW64_CXX=/usr/bin/x86_64-w64-mingw32-g++ \
             LOCAL_MINGW64_RC=/usr/bin/x86_64-w64-mingw32-windres \
+            LOCAL_MINGW64_AR=/usr/bin/x86_64-w64-mingw32-ar \
             DDK_INCLUDE_DIR=/usr/x86_64-w64-mingw32/include/ddk \
             DESTDIR=$(realpath _install)
       - run: |

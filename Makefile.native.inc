@@ -53,8 +53,14 @@ path_exists = \
 	$(error ERROR: $1 does not exist, run `make -C $(DPP_ROOT) deps` first.))
 
 define CHECK_REQUIRED_PATHS
+	$(call is_set,$(CC),Makefile argument CC missing)
+	$(call is_set,$(CXX),Makefile argument CXX missing)
+	$(call is_set,$(AR),Makefile argument AR missing)
+	$(call is_set,$(EASTL_STATIC_LIB),Makefile argument EASTL_STATIC_LIB missing)
+	$(call is_set,$(LIBUSERCRT_STATIC_LIB),Makefile argument LIBUSERCRT_STATIC_LIB missing)
 	$(call path_exists,$(CC))
 	$(call path_exists,$(CXX))
+	$(call path_exists,$(AR))
 	$(call path_exists,$(EASTL_STATIC_LIB))
 	$(call path_exists,$(LIBUSERCRT_STATIC_LIB))
 endef
