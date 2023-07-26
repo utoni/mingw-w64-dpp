@@ -17,10 +17,6 @@ include Makefile.native.inc
 endif
 
 EASTL_DEPS := $(wildcard $(DPP_ROOT)/EASTL/source/*.cpp) $(wildcard $(DPP_ROOT)/EASTL/include/EASTL/*.h)
-EASTL_STATIC_LIB := $(DPP_ROOT)/$(EASTL_BUILDDIR)/libEASTL.a
-
-LIBUSERCRT_OBJECTS := $(LIBCRT_BUILD_DIR)/ucrt$(NAME_SUFFIX).opp
-LIBUSERCRT_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libusercrt.a
 
 all: deps
 

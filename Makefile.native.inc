@@ -18,6 +18,7 @@ INSTALL = install
 CMAKE = cmake
 CC = /usr/bin/cc
 CXX = /usr/bin/c++
+AR = /usr/bin/ar
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing -Wno-c++20-compat \
 	-m64 -fPIC -fvisibility=hidden \
 	-ffunction-sections -fdata-sections \
@@ -37,7 +38,11 @@ EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/
 USER_LDFLAGS := -Wl,--gc-sections
 
 EASTL_BUILDDIR := EASTL-native-build
+EASTL_STATIC_LIB := $(DPP_ROOT)/$(EASTL_BUILDDIR)/libEASTL.a
+
 LIBCRT_BUILD_DIR := $(DPP_ROOT)/CRT-native-build
+LIBUSERCRT_OBJECTS := $(LIBCRT_BUILD_DIR)/ucrt$(NAME_SUFFIX).opp
+LIBUSERCRT_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libusercrt.a
 
 is_set = \
 	$(if $1,, \
