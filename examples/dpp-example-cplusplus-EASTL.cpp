@@ -3,6 +3,7 @@
 #endif
 
 #include <cstdint>
+#include <stdexcept>
 
 #include <EASTL/functional.h>
 #include <EASTL/hash_map.h>

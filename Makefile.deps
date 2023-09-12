@@ -20,10 +20,8 @@ EASTL_DEPS := $(wildcard $(DPP_ROOT)/EASTL/source/*.cpp) $(wildcard $(DPP_ROOT)/
 
 all: deps
 
-$(LIBCRT_BUILD_DIR):
-	$(Q)mkdir -p '$(LIBCRT_BUILD_DIR)'
-
-$(LIBCRT_STATIC_LIB): $(LIBCRT_BUILD_DIR) $(LIBCRT_OBJECTS)
+$(LIBCRT_STATIC_LIB): $(LIBCRT_OBJECTS)
+	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
 ifneq ($(Q),@)
 	$(Q)$(AR) -rsv '$@' $(LIBCRT_OBJECTS)
 else
@@ -31,7 +29,8 @@ else
 endif
 	@echo 'AR  $@'
 
-$(LIBCXXRT_STATIC_LIB): $(LIBCRT_BUILD_DIR) $(LIBCXXRT_OBJECTS)
+$(LIBCXXRT_STATIC_LIB): $(LIBCXXRT_OBJECTS)
+	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
 ifneq ($(Q),@)
 	$(Q)$(AR) -rsv '$@' $(LIBCXXRT_OBJECTS)
 else
@@ -39,7 +38,8 @@ else
 endif
 	@echo 'AR  $@'
 
-$(LIBUSERCRT_STATIC_LIB): $(LIBCRT_BUILD_DIR) $(LIBUSERCRT_OBJECTS)
+$(LIBUSERCRT_STATIC_LIB): $(LIBUSERCRT_OBJECTS)
+	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
 ifneq ($(Q),@)
 	$(Q)$(AR) -rsv '$@' $(LIBUSERCRT_OBJECTS)
 else
@@ -137,7 +137,7 @@ deps-build: \
 deps: deps-print-local-notice deps-build
 
 $(EASTL_STATIC_LIB): $(CXX) $(EASTL_DEPS)
-	mkdir -p $(EASTL_BUILDDIR)
+	$(Q)test -d '$(EASTL_BUILDDIR)' || mkdir -p $(EASTL_BUILDDIR)
 	cd $(EASTL_BUILDDIR) && \
 		$(CMAKE) ../EASTL \
 			-DCMAKE_CXX_COMPILER="$(realpath $(CXX))" \
@@ -185,11 +185,10 @@ deps-build: \
 deps: deps-build
 
 $(EASTL_STATIC_LIB): $(CXX) $(EASTL_DEPS)
-	mkdir -p $(EASTL_BUILDDIR)
+	$(Q)test -d '$(EASTL_BUILDDIR)' || mkdir -p $(EASTL_BUILDDIR)
 	cd $(EASTL_BUILDDIR) && \
 		$(CMAKE) ../EASTL \
 			-DCMAKE_CXX_COMPILER="$(realpath $(CXX))" \
-			-DCMAKE_SYSTEM_NAME="Linux" \
 			-DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
 			-DCMAKE_CXX_FLAGS='$(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS)' && \
 		$(MAKE) $(CMAKE_Q)

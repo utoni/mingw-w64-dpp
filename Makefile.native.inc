@@ -26,13 +26,12 @@ CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing -Wno-c++20-compat
 ifneq ($(WERROR),)
 CFLAGS += -Werror
 endif
-CXXFLAGS := -fno-exceptions -fno-rtti -fuse-cxa-atexit
+CXXFLAGS := -fuse-cxa-atexit
 EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/EABase/include/Common \
-	-DEASTL_THREAD_SUPPORT_AVAILABLE=0 \
-	-DEASTL_EXCEPTIONS_ENABLED=0 \
-	-DEASTL_ASSERT_ENABLED=0 \
-	-DEA_COMPILER_NO_EXCEPTIONS=1 \
-	-DEA_COMPILER_MANAGED_CPP=1 \
+	-DEASTL_THREAD_SUPPORT_AVAILABLE=1 \
+	-DEASTL_EXCEPTIONS_ENABLED=1 \
+	-DEASTL_ASSERT_ENABLED=1 \
+	-DEA_PLATFORM_POSIX=1 \
 	-Wno-unknown-pragmas \
 	-Wno-deprecated-copy
 USER_LDFLAGS := -Wl,--gc-sections

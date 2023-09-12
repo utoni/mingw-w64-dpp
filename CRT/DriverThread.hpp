@@ -3,14 +3,14 @@
 
 #include <ntddk.h>
 
+#include <EASTL/deque.h>
+#include <EASTL/functional.h>
+#include <EASTL/shared_ptr.h>
+
 extern "C" void InterceptorThreadRoutine(PVOID threadContext);
 
 namespace DriverThread
 {
-class WorkItem;
-typedef NTSTATUS (*threadRoutine_t)(PVOID);
-typedef NTSTATUS (*workerRoutine_t)(WorkItem * item);
-
 class Mutex
 {
 public:
@@ -36,14 +36,36 @@ private:
     Mutex m_Lock;
 };
 
+class ThreadArgs : public virtual eastl::enable_shared_from_this<ThreadArgs>
+{
+public:
+    ThreadArgs(void)
+    {
+    }
+    ThreadArgs(const ThreadArgs &) = delete;
+    virtual ~ThreadArgs(void)
+    {
+    }
+};
+
+using ThreadRoutine = eastl::function<NTSTATUS(eastl::shared_ptr<ThreadArgs> args)>;
+
 class Thread
 {
 public:
     Thread(void);
+    Thread(const Thread &) = delete;
     ~Thread(void);
-    NTSTATUS Start(threadRoutine_t routine, PVOID threadContext);
+    NTSTATUS Start(ThreadRoutine routine, eastl::shared_ptr<ThreadArgs> args);
     NTSTATUS WaitForTermination(LONGLONG timeout = 0);
-    HANDLE GetThreadId(void);
+    HANDLE GetThreadId(void)
+    {
+        return m_threadId;
+    }
+    bool isRunning(void)
+    {
+        return GetThreadId() != nullptr;
+    }
 
 private:
     friend void ::InterceptorThreadRoutine(PVOID threadContext);
@@ -51,8 +73,8 @@ private:
     HANDLE m_threadId = nullptr;
     PETHREAD m_threadObject = nullptr;
     Mutex m_mutex;
-    threadRoutine_t m_routine;
-    PVOID m_threadContext;
+    ThreadRoutine m_routine;
+    eastl::shared_ptr<ThreadArgs> m_threadContext;
 };
 
 class Spinlock
@@ -79,31 +101,65 @@ private:
     KSEMAPHORE m_semaphore;
 };
 
-class WorkItem
+class Event
 {
 public:
-    SLIST_ENTRY QueueEntry;
-    PSLIST_ENTRY WorkListEntry;
+    Event();
+    NTSTATUS Wait(LONGLONG timeout = 0);
+    NTSTATUS Notify();
+
+private:
+    KEVENT m_event;
 };
 
-class WorkQueue
+class WorkItem final
+{
+    friend class WorkQueue;
+
+public:
+    WorkItem(const eastl::shared_ptr<void> & user) : m_user(std::move(user))
+    {
+    }
+    virtual ~WorkItem(void)
+    {
+    }
+    template <class T>
+    eastl::shared_ptr<T> Get(void)
+    {
+        return eastl::static_pointer_cast<T>(m_user);
+    }
+    template <class T>
+    void Get(eastl::shared_ptr<T> & dest)
+    {
+        dest = eastl::static_pointer_cast<T>(m_user);
+    }
+
+private:
+    eastl::shared_ptr<void> m_user;
+};
+
+using WorkerRoutine = eastl::function<NTSTATUS(WorkItem & item)>;
+
+class WorkQueue final
 {
 public:
     WorkQueue(void);
+    WorkQueue(const WorkQueue &) = delete;
     ~WorkQueue(void);
-    NTSTATUS Start(workerRoutine_t workerRoutine);
-    void Stop(void);
-    void Enqueue(WorkItem * item);
+    NTSTATUS Start(WorkerRoutine routine);
+    void Stop(bool wait = true);
+    void Enqueue(WorkItem & item);
+    void Enqueue(eastl::deque<WorkItem> & items);
 
 private:
     Mutex m_mutex;
-    SLIST_HEADER m_work;
-    KEVENT m_wakeEvent;
-    BOOLEAN m_stopWorker; // Work LIST must be empty and StopWorker TRUE to be able to stop!
+    eastl::deque<WorkItem> m_queue;
+    Event m_wakeEvent;
+    bool m_stopWorker; // Work LIST must be empty and StopWorker TRUE to be able to stop!
     Thread m_worker;
-    workerRoutine_t m_workerRoutine;
+    WorkerRoutine m_workerRoutine;
 
-    static NTSTATUS WorkerInterceptorRoutine(PVOID workerContext);
+    static NTSTATUS WorkerInterceptorRoutine(eastl::shared_ptr<ThreadArgs> args);
 };
 
 }; // namespace DriverThread

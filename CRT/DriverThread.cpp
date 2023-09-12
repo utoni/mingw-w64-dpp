@@ -1,5 +1,21 @@
 #include <DriverThread.hpp>
 
+class WorkQueueArgs : public DriverThread::ThreadArgs
+{
+    friend class WorkQueue;
+
+public:
+    WorkQueueArgs(DriverThread::WorkQueue * wq) : m_wq(wq){};
+    WorkQueueArgs(const WorkQueueArgs &) = delete;
+    DriverThread::WorkQueue * getWorkQueue()
+    {
+        return m_wq;
+    }
+
+private:
+    DriverThread::WorkQueue * m_wq;
+};
+
 // Thread
 
 DriverThread::Thread::Thread(void)
@@ -13,13 +29,17 @@ DriverThread::Thread::~Thread(void)
 
 extern "C" void InterceptorThreadRoutine(PVOID threadContext)
 {
+    NTSTATUS threadReturn;
     DriverThread::Thread * self = (DriverThread::Thread *)threadContext;
 
     self->m_threadId = PsGetCurrentThreadId();
-    PsTerminateSystemThread(self->m_routine(self->m_threadContext));
+    threadReturn = self->m_routine(self->m_threadContext);
+    self->m_threadId = nullptr;
+    self->m_threadContext = nullptr;
+    PsTerminateSystemThread(threadReturn);
 }
 
-NTSTATUS DriverThread::Thread::Start(threadRoutine_t routine, PVOID threadContext)
+NTSTATUS DriverThread::Thread::Start(ThreadRoutine routine, eastl::shared_ptr<ThreadArgs> args)
 {
     HANDLE threadHandle;
     NTSTATUS status;
@@ -31,7 +51,7 @@ NTSTATUS DriverThread::Thread::Start(threadRoutine_t routine, PVOID threadContex
     }
 
     m_routine = routine;
-    m_threadContext = threadContext;
+    m_threadContext = args;
     status = PsCreateSystemThread(&threadHandle, (ACCESS_MASK)0, NULL, (HANDLE)0, NULL, InterceptorThreadRoutine, this);
 
     if (!NT_SUCCESS(status))
@@ -70,11 +90,6 @@ NTSTATUS DriverThread::Thread::WaitForTermination(LONGLONG timeout)
     ObDereferenceObject(m_threadObject);
     m_threadObject = nullptr;
     return status;
-}
-
-HANDLE DriverThread::Thread::GetThreadId(void)
-{
-    return m_threadId;
 }
 
 // Spinlock
@@ -117,6 +132,24 @@ LONG DriverThread::Semaphore::Release(LONG adjustment)
     return KeReleaseSemaphore(&m_semaphore, 0, adjustment, FALSE);
 }
 
+// Event
+
+DriverThread::Event::Event()
+{
+    KeInitializeEvent(&m_event, NotificationEvent, FALSE);
+}
+
+NTSTATUS DriverThread::Event::Wait(LONGLONG timeout)
+{
+    LARGE_INTEGER li_timeout = {.QuadPart = timeout};
+    return KeWaitForSingleObject(&m_event, Executive, KernelMode, FALSE, (timeout == 0 ? NULL : &li_timeout));
+}
+
+NTSTATUS DriverThread::Event::Notify()
+{
+    return KeSetEvent(&m_event, 0, FALSE);
+}
+
 // Mutex
 
 DriverThread::Mutex::Mutex(void)
@@ -151,11 +184,9 @@ DriverThread::LockGuard::~LockGuard(void)
 
 // WorkQueue
 
-DriverThread::WorkQueue::WorkQueue(void) : m_worker()
+DriverThread::WorkQueue::WorkQueue(void)
+    : m_mutex(), m_queue(), m_wakeEvent(), m_stopWorker(false), m_worker(), m_workerRoutine(nullptr)
 {
-    InitializeSListHead(&m_work);
-    KeInitializeEvent(&m_wakeEvent, SynchronizationEvent, FALSE);
-    m_stopWorker = FALSE;
 }
 
 DriverThread::WorkQueue::~WorkQueue(void)
@@ -163,14 +194,15 @@ DriverThread::WorkQueue::~WorkQueue(void)
     Stop();
 }
 
-NTSTATUS DriverThread::WorkQueue::Start(workerRoutine_t workerRoutine)
+NTSTATUS DriverThread::WorkQueue::Start(WorkerRoutine routine)
 {
     NTSTATUS status;
 
     {
         LockGuard lock(m_mutex);
-        m_workerRoutine = workerRoutine;
-        status = m_worker.Start(WorkerInterceptorRoutine, this);
+        m_workerRoutine = routine;
+        auto wqa = eastl::make_shared<WorkQueueArgs>(this);
+        status = m_worker.Start(WorkerInterceptorRoutine, wqa);
     }
 
     if (!NT_SUCCESS(status) && status != STATUS_UNSUCCESSFUL)
@@ -181,73 +213,83 @@ NTSTATUS DriverThread::WorkQueue::Start(workerRoutine_t workerRoutine)
     return status;
 }
 
-void DriverThread::WorkQueue::Stop(void)
+void DriverThread::WorkQueue::Stop(bool wait)
 {
     LockGuard lock(m_mutex);
-    if (m_stopWorker == TRUE)
+    if (m_stopWorker == true)
     {
         return;
     }
-    m_stopWorker = TRUE;
-    KeSetEvent(&m_wakeEvent, 0, FALSE);
-}
-
-void DriverThread::WorkQueue::Enqueue(WorkItem * item)
-{
-    if (InterlockedPushEntrySList(&m_work, &item->QueueEntry) == NULL)
+    m_stopWorker = true;
+    m_wakeEvent.Notify();
+    if (wait)
     {
-        // Work queue was empty. So, signal the work queue event in case the
-        // worker thread is waiting on the event for more operations.
-        KeSetEvent(&m_wakeEvent, 0, FALSE);
+        m_worker.WaitForTermination();
     }
 }
 
-NTSTATUS DriverThread::WorkQueue::WorkerInterceptorRoutine(PVOID workerContext)
+void DriverThread::WorkQueue::Enqueue(WorkItem & item)
 {
-    DriverThread::WorkQueue * wq = (DriverThread::WorkQueue *)workerContext;
-    PSLIST_ENTRY listEntryRev, listEntry, next;
+    {
+        LockGuard lock(m_mutex);
+        m_queue.emplace_back(item);
+    }
+    m_wakeEvent.Notify();
+}
+
+void DriverThread::WorkQueue::Enqueue(eastl::deque<WorkItem> & items)
+{
+    {
+        LockGuard lock(m_mutex);
+        m_queue.insert(m_queue.end(), items.begin(), items.end());
+    }
+    m_wakeEvent.Notify();
+}
+
+NTSTATUS DriverThread::WorkQueue::WorkerInterceptorRoutine(eastl::shared_ptr<ThreadArgs> args)
+{
+    auto wqa = eastl::static_pointer_cast<WorkQueueArgs>(args);
+    WorkQueue * wq = wqa->getWorkQueue();
 
     PAGED_CODE();
 
     for (;;)
     {
-        // Flush all the queued operations into a local list
-        listEntryRev = InterlockedFlushSList(&wq->m_work);
+        eastl::deque<WorkItem> doQueue;
+        std::size_t nItems;
 
-        if (listEntryRev == NULL)
         {
+            LockGuard lock(wq->m_mutex);
+            nItems = wq->m_queue.size();
+        }
 
-            // There's no work to do. If we are allowed to stop, then stop.
-            if (wq->m_stopWorker == TRUE)
+        if (nItems == 0)
+        {
+            if (wq->m_stopWorker == true)
             {
                 break;
             }
 
-            // Otherwise, wait for more operations to be enqueued.
-            KeWaitForSingleObject(&wq->m_wakeEvent, Executive, KernelMode, FALSE, 0);
+            wq->m_wakeEvent.Wait();
             continue;
         }
 
-        // Need to reverse the flushed list in order to preserve the FIFO order
-        listEntry = NULL;
-        while (listEntryRev != NULL)
         {
-            next = listEntryRev->Next;
-            listEntryRev->Next = listEntry;
-            listEntry = listEntryRev;
-            listEntryRev = next;
+            LockGuard lock(wq->m_mutex);
+            doQueue = wq->m_queue;
+            wq->m_queue.clear();
         }
 
-        // Now process the correctly ordered list of operations one by one
-        while (listEntry)
+        while (doQueue.size() > 0)
         {
-            PSLIST_ENTRY arg = listEntry;
-            listEntry = listEntry->Next;
-            DriverThread::WorkItem * wi = CONTAINING_RECORD(arg, DriverThread::WorkItem, QueueEntry);
-            if (wq->m_workerRoutine(wi) != STATUS_SUCCESS)
+            WorkItem & item = doQueue.front();
+
+            if (wq->m_workerRoutine(item) != STATUS_SUCCESS)
             {
-                wq->m_stopWorker = TRUE;
+                wq->m_stopWorker = true;
             }
+
+            doQueue.pop_front();
         }
     }
 
