@@ -304,3 +304,9 @@ void * __cdecl _AddressOfReturnAddress(void)
 {
     return __builtin_extract_return_addr(__builtin_return_address(0));
 }
+
+char __cdecl _putchar(char c)
+{
+    DbgPrint("%c", c);
+    return c;
+}

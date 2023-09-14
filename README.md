@@ -195,6 +195,11 @@ You may reach a point where system functions, intrinsics or built-ins are requir
 For system functions that can be retrieved via `MmGetSystemRoutineAddress`, you may use `CRT/gen_wrapper.sh` to create wrapper modules. These modules retrieve the desired functions during run-time, but will be available during link-time. An example is `ZwTraceControl`, which gets exported by `ntdll.dll`.
 Eventually missing intrinsics/built-ins should be placed in `CRT/kcrt.c`.
 
+## Known Issues
+
+Unfortunately, `eastl::to_string` does not work. See `CRT/eastl_compat.cpp` for more details.
+Instead, `#include <eastl_compat.hpp>` and use `::to_string` globals.
+
 ## Thanks goes to:
 
 - [Zeranoe](https://github.com/Zeranoe/mingw-w64-build) for the Mingw64 build script

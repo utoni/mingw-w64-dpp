@@ -1,5 +1,7 @@
 #include <ntddk.h>
 
+#include <EASTL/string.h>
+#include <eastl_compat.hpp>
 #include <DriverThread.hpp>
 
 class TestSmth
@@ -16,6 +18,23 @@ public:
     void doSmth(void)
     {
         DbgPrint("%s\n", "Hello Class!");
+
+        const auto & number_ud = ::to_string(1337u);
+        DbgPrint("Value 1337u to String: %s\n", number_ud.c_str());
+        const auto & number_d = ::to_string(1337);
+        DbgPrint("Value 1337 to String: %s\n", number_d.c_str());
+        const auto & number_l = ::to_string(1337l);
+        DbgPrint("Value 1337l to String: %s\n", number_l.c_str());
+        const auto & number_lu = ::to_string(1337lu);
+        DbgPrint("Value 1337lu to String: %s\n", number_lu.c_str());
+        const auto & number_ll = ::to_string(1337ll);
+        DbgPrint("Value 1337ll to String: %s\n", number_ll.c_str());
+        const auto & number_llu = ::to_string(1337llu);
+        DbgPrint("Value 1337llu to String: %s\n", number_llu.c_str());
+        const auto & number_f = ::to_string(1337.1337f);
+        DbgPrint("Value 1337f to String: %s\n", number_f.c_str());
+        const auto & number_lf = ::to_string(1337.1337);
+        DbgPrint("Value 1337lf to String: %s\n", number_lf.c_str());
     }
 };
 static TestSmth * cdtor_test;
