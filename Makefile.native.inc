@@ -22,7 +22,7 @@ AR = /usr/bin/ar
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing -Wno-c++20-compat \
 	-m64 -fPIC -fvisibility=hidden \
 	-ffunction-sections -fdata-sections \
-	-I$(DPP_ROOT)/CRT
+	-I$(DPP_ROOT)/CRT -DNATIVE=1
 ifneq ($(WERROR),)
 CFLAGS += -Werror
 endif

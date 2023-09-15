@@ -10,6 +10,10 @@
 #define NANOPRINTF_IMPLEMENTATION 1
 #include "nanoprintf.h"
 
+#ifndef NATIVE
+#include <wdm.h>
+#endif
+
 /*
  * eastl::to_string(...) does not work yet event if with a provided Vsnprintf/Vsnprintf8
  * The issue seems to be caused by a broken va_list/va_copy.
@@ -118,3 +122,23 @@ eastl::string to_string(double value)
     else
         return "";
 }
+
+#ifndef NATIVE
+eastl::string from_unicode(wchar_t * wstr, unsigned short wlen, unsigned short wmax)
+{
+    ANSI_STRING ansi;
+    UNICODE_STRING unicode;
+
+    unicode.Buffer = wstr;
+    unicode.Length = wlen;
+    unicode.MaximumLength = (wmax > 0 ? wmax : wlen);
+
+    if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&ansi, &unicode, TRUE))) {
+        eastl::string result(ansi.Buffer, ansi.Length);
+        RtlFreeAnsiString(&ansi);
+        return result;
+    }
+
+    return "";
+}
+#endif
