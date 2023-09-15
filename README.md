@@ -11,7 +11,7 @@ beloved containers.
 
 You will need an modern Mingw64-GCC toolchain.
 Do not use any broken toolchains like the one shipped with debian-10.
-Mingw64-GCC for debian-11 seems to work, but is not well tested.
+Mingw64 for debian-11 seems to work, but is not well tested. Mingw64 for debian-12 untested.
 Instead either use Zeranoe's build script with `make -C [path-to-this-repo] -f Makefile.deps all` (same as `make -C [path-to-this-repo] deps`) or use your own.
 
 ## What?
@@ -157,11 +157,11 @@ LDFLAGS_$(DRIVER_NAME).sys =
 
 # Userspace
 USER_NAME = usa$(NAME_SUFFIX)
-USER_OBJECTS = $(USERSPACE_NAME).opp
-USER_TARGET = $(USERSPACE_NAME).exe
+USER_OBJECTS = $(USER_NAME).opp
+USER_TARGET = $(USER_NAME).exe
 USER_LIBS =
-CFLAGS_$(USERSPACE_NAME).opp =
-LDFLAGS_$(USERSPACE_NAME).exe =
+CFLAGS_$(USER_NAME).opp =
+LDFLAGS_$(USER_NAME).exe =
 
 # specify additional CFLAGS for kernel/user targets
 CUSTOM_CFLAGS = -I.
@@ -172,8 +172,8 @@ CUSTOM_CFLAGS = -I.
 $(DRIVER_TARGET): $(DRIVER_OBJECTS)
 	$(call LINK_CPP_KERNEL_TARGET,$(DRIVER_OBJECTS),$@)
 
-$(USERSPACE_TARGET): $(USERSPACE_OBJECTS)
-	$(call LINK_CPP_USER_TARGET,$(USERSPACE_OBJECTS),$@)
+$(USER_TARGET): $(USER_OBJECTS)
+	$(call LINK_CPP_USER_TARGET,$(USER_OBJECTS),$@)
 ```
 
 [A simple and stupid project example.](https://github.com/utoni/mingw-w64-driver)
