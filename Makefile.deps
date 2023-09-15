@@ -59,7 +59,7 @@ $(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/nt
 
 $(LIBCRT_BUILD_DIR)/eastl_compat$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/eastl_compat.cpp
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
-	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/eastl_compat.cpp -o $@
+	$(Q)$(CXX) $(CFLAGS) -Wno-format -Wno-format-extra-args $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/eastl_compat.cpp -o $@
 	@echo 'CXX $@'
 
 $(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/kcrt.cpp
