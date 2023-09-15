@@ -19,6 +19,9 @@ public:
     {
         DbgPrint("%s\n", "Hello Class!");
 
+        const auto & eastl_to_string = eastl::to_string(0xDEADC0DE);
+        DbgPrint("Using eastl::to_string should return a warning: %s\n", eastl_to_string.c_str());
+
         const auto & number_ud = ::to_string(1337u);
         DbgPrint("Value 1337u to String: %s\n", number_ud.c_str());
         const auto & number_d = ::to_string(1337);
