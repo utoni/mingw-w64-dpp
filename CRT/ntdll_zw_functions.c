@@ -4,9 +4,13 @@
 
 typedef NTSTATUS NTAPI (*ZwTraceControl_t) (_In_ ULONG FunctionCode, PVOID InBuffer, _In_ ULONG InBufferLen, PVOID OutBuffer, _In_ ULONG OutBufferLen, _Out_ PULONG ReturnLength);
 typedef NTSTATUS NTAPI (*ZwTraceEvent_t) (_In_ HANDLE TraceHandle, _In_ ULONG Flags, _In_ ULONG FieldSize, _In_ PVOID Fields);
+typedef NTSTATUS NTAPI (*ZwQueryVirtualMemory_t) (_In_ HANDLE ProcessHandle, _In_ PVOID BaseAddress, _In_ int MemoryInformationClass, _Out_ PVOID MemoryInformation, _In_ SIZE_T MemoryInformationLength, _Out_ PSIZE_T ReturnLength);
+typedef NTSTATUS NTAPI (*ZwQuerySystemInformation_t) (_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength);
 
 static ZwTraceControl_t _ZwTraceControl = NULL;
 static ZwTraceEvent_t _ZwTraceEvent = NULL;
+static ZwQueryVirtualMemory_t _ZwQueryVirtualMemory = NULL;
+static ZwQuerySystemInformation_t _ZwQuerySystemInformation = NULL;
 
 int __cdecl ntdll_zw_functions (void)
 {
@@ -25,6 +29,20 @@ int __cdecl ntdll_zw_functions (void)
     if (_ZwTraceEvent == NULL)
     {
         DbgPrint("%s\n", "System routine ZwTraceEvent not found.");
+        retval++;
+    }
+    RtlInitUnicodeString(&fnName, L"ZwQueryVirtualMemory");
+    _ZwQueryVirtualMemory = MmGetSystemRoutineAddress(&fnName);
+    if (_ZwQueryVirtualMemory == NULL)
+    {
+        DbgPrint("%s\n", "System routine ZwQueryVirtualMemory not found.");
+        retval++;
+    }
+    RtlInitUnicodeString(&fnName, L"ZwQuerySystemInformation");
+    _ZwQuerySystemInformation = MmGetSystemRoutineAddress(&fnName);
+    if (_ZwQuerySystemInformation == NULL)
+    {
+        DbgPrint("%s\n", "System routine ZwQuerySystemInformation not found.");
         retval++;
     }
 
@@ -46,4 +64,20 @@ NTSTATUS NTAPI ZwTraceEvent (_In_ HANDLE TraceHandle, _In_ ULONG Flags, _In_ ULO
         return STATUS_PROCEDURE_NOT_FOUND;
 
     return _ZwTraceEvent (TraceHandle, Flags, FieldSize, Fields);
+}
+
+NTSTATUS NTAPI ZwQueryVirtualMemory (_In_ HANDLE ProcessHandle, _In_ PVOID BaseAddress, _In_ int MemoryInformationClass, _Out_ PVOID MemoryInformation, _In_ SIZE_T MemoryInformationLength, _Out_ PSIZE_T ReturnLength)
+{
+    if (_ZwQueryVirtualMemory == NULL)
+        return STATUS_PROCEDURE_NOT_FOUND;
+
+    return _ZwQueryVirtualMemory (ProcessHandle, BaseAddress, MemoryInformationClass, MemoryInformation, MemoryInformationLength, ReturnLength);
+}
+
+NTSTATUS NTAPI ZwQuerySystemInformation (_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength)
+{
+    if (_ZwQuerySystemInformation == NULL)
+        return STATUS_PROCEDURE_NOT_FOUND;
+
+    return _ZwQuerySystemInformation (SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
 }

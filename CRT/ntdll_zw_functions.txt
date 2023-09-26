@@ -1,2 +1,4 @@
 NTSYSCALLAPI NTSTATUS NTAPI ZwTraceControl (_In_ ULONG FunctionCode, PVOID InBuffer, _In_ ULONG InBufferLen, PVOID OutBuffer, _In_ ULONG OutBufferLen, _Out_ PULONG ReturnLength)
 NTSYSCALLAPI NTSTATUS NTAPI ZwTraceEvent (_In_ HANDLE TraceHandle, _In_ ULONG Flags, _In_ ULONG FieldSize, _In_ PVOID Fields)
+NTSYSCALLAPI NTSTATUS NTAPI ZwQueryVirtualMemory(_In_ HANDLE ProcessHandle, _In_ PVOID BaseAddress, _In_ int MemoryInformationClass, _Out_ PVOID MemoryInformation, _In_ SIZE_T MemoryInformationLength, _Out_ PSIZE_T ReturnLength);
+NTSYSCALLAPI NTSTATUS NTAPI ZwQuerySystemInformation(_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength);

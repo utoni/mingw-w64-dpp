@@ -100,7 +100,7 @@ void * __cdecl malloc(size_t size)
     PMALLOC_HEADER mhdr = NULL;
     const size_t new_size = size + sizeof(MALLOC_HEADER);
 
-    mhdr = (PMALLOC_HEADER)ExAllocatePoolWithTag(NonPagedPool, new_size, KCRT_POOL_DEFAULT_TAG);
+    mhdr = (PMALLOC_HEADER)ExAllocatePoolWithTag(new_size > PAGE_SIZE ? PagedPool : NonPagedPool, new_size, KCRT_POOL_DEFAULT_TAG);
     if (mhdr)
     {
         RtlZeroMemory(mhdr, new_size);

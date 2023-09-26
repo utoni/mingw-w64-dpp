@@ -22,6 +22,9 @@ public:
         const auto & eastl_to_string = eastl::to_string(0xDEADC0DE);
         DbgPrint("Using eastl::to_string should return a warning: %s\n", eastl_to_string.c_str());
 
+        eastl::wstring eastl_unicode = L"test_eastl_unicode_string";
+        DbgPrint("eastl::wstring: %S\n", eastl_unicode.c_str());
+
         wchar_t test_unicode_str[] = L"test_unicode_string";
         unsigned short test_unicode_strlen = sizeof(test_unicode_str);
         const auto & eastl_from_unicode = ::from_unicode(test_unicode_str, test_unicode_strlen);
