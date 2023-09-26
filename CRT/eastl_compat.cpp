@@ -123,6 +123,50 @@ eastl::string to_string(double value)
         return "";
 }
 
+template <typename T>
+static eastl::string to_string_hex(T w, size_t hex_len = sizeof(T) << 1)
+{
+    static const char * const digits = "0123456789ABCDEF";
+    const size_t len = sizeof(T) << 1;
+
+    if (hex_len < len)
+        hex_len = len;
+    eastl::string rc(hex_len, '0');
+    for (size_t i = hex_len - len, j = (hex_len - 1) * 4; i < hex_len; ++i, j -= 4)
+        rc[i] = digits[(w >> j) & 0x0f];
+    return rc;
+}
+
+eastl::string to_string_hex(int value, size_t fill_width)
+{
+    return to_string_hex<int>(value, fill_width);
+}
+
+eastl::string to_string_hex(long value, size_t fill_width)
+{
+    return to_string_hex<long>(value, fill_width);
+}
+
+eastl::string to_string_hex(long long value, size_t fill_width)
+{
+    return to_string_hex<long long>(value, fill_width);
+}
+
+eastl::string to_string_hex(unsigned int value, size_t fill_width)
+{
+    return to_string_hex<unsigned int>(value, fill_width);
+}
+
+eastl::string to_string_hex(unsigned long int value, size_t fill_width)
+{
+    return to_string_hex<unsigned long int>(value, fill_width);
+}
+
+eastl::string to_string_hex(unsigned long long int value, size_t fill_width)
+{
+    return to_string_hex<unsigned long long int>(value, fill_width);
+}
+
 #ifndef NATIVE
 eastl::string from_unicode(wchar_t * wstr, unsigned short wlen, unsigned short wmax)
 {
@@ -133,7 +177,8 @@ eastl::string from_unicode(wchar_t * wstr, unsigned short wlen, unsigned short w
     unicode.Length = wlen;
     unicode.MaximumLength = (wmax > 0 ? wmax : wlen);
 
-    if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&ansi, &unicode, TRUE))) {
+    if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&ansi, &unicode, TRUE)))
+    {
         eastl::string result(ansi.Buffer, ansi.Length);
         RtlFreeAnsiString(&ansi);
         return result;

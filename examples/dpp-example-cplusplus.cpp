@@ -46,6 +46,9 @@ public:
         DbgPrint("Value 1337f to String: %s\n", number_f.c_str());
         const auto & number_lf = ::to_string(1337.1337);
         DbgPrint("Value 1337lf to String: %s\n", number_lf.c_str());
+
+        DbgPrint("Value 0x00000000DEADBEEF to Hex String: 0x%s\n", ::to_string_hex(0xdeadbeef, 16));
+        DbgPrint("Value 0xDEADC0DEDEADBEEF to Hex String: 0x%s\n", ::to_string_hex(0xdeadc0dedeadbeef));
     }
 };
 static TestSmth * cdtor_test;
