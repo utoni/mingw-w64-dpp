@@ -236,5 +236,6 @@ help:
 	@echo -e '\tWERROR          = $(WERROR)'
 	@echo -e '\tQ               = $(Q)'
 
+.NOTPARALLEL: distclean clean
 .PHONY: all deps-print-local-notice deps-build deps package distclean clean help
 .DEFAULT_GOAL := all

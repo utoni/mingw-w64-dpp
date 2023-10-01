@@ -59,6 +59,8 @@ ifneq ($(WERROR),)
 CFLAGS += -Werror
 endif
 
+#PRINT_LDSCRIPT = -Wl,--verbose
+
 CXXFLAGS := -fno-exceptions -fno-rtti -fuse-cxa-atexit
 EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/EABase/include/Common \
 	-DEASTL_USER_CONFIG_HEADER="<eastl_user_config.hpp>" \
@@ -81,7 +83,9 @@ DRIVER_LDFLAGS := -shared \
 	-Wl,--gc-sections \
 	-Wl,--exclude-all-symbols \
 	-Wl,--entry,_CRT_DriverEntry \
-	-nostartfiles -nodefaultlibs -nostdlib
+	$(PRINT_LDSCRIPT) \
+	-nostartfiles -nodefaultlibs -nostdlib \
+	-T$(DPP_ROOT)/ld-script.txt
 DRIVER_LIBS := -lntoskrnl -lhal
 USER_LDFLAGS := -Wl,--dynamicbase -Wl,--nxcompat -Wl,--gc-sections
 USER_LIBS :=

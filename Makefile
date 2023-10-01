@@ -50,5 +50,6 @@ package:
 help:
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps help
 
+.NOTPARALLEL: examples-clean deps-clean deps-distclean
 .PHONY: examples deps deps-distclean deps-clean help
 .DEFAULT_GOAL := deps
