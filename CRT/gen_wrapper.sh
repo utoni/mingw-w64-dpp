@@ -10,13 +10,13 @@ while read -r line; do
     CURLINE=$(expr ${CURLINE} + 1)
     VALID=1
 
-    rtype=$(printf '%s\n' "${line}" | grep -oE '(NTSTATUS NTAPI|VOID NTAPI)')
+    rtype=$(printf '%s\n' "${line}" | grep -oE '(NTSTATUS NTAPI|VOID NTAPI|PVOID NTAPI)')
     if [ -z "${rtype}" ]; then
         printf '%s\n' "Line ${CURLINE}: Missing return value of either type 'NTSTATUS NTAPI' or 'VOID NTAPI'." >&2
         VALID=0
     fi
 
-    fnname=$(printf '%s\n' "${line}" | grep -oE 'Zw[^ (]*')
+    fnname=$(printf '%s\n' "${line}" | grep -oE '(Zw|Rtl|Ob|Mm|Io)[^ (]*')
     if [ -z "${fnname}" ]; then
         printf '%s\n' "Line ${CURLINE}: Missing function name." >&2
         VALID=0
@@ -28,10 +28,15 @@ while read -r line; do
         VALID=0
     fi
 
-    param_names=$(printf '%s\n' "${fnsig}" | tr -d '()' | sed 's/\([^,]*\)/\1\n/g' | grep -oE '[^ ]*$')
-    if [ -z "${param_names}" ]; then
-        printf '%s\n' "Line ${CURLINE}: Could not parse function parameters." >&2
-        VALID=0
+    params_without_braces=$(printf '%s\n' "${fnsig}" | tr -d '()')
+    if [ ! -z "${params_without_braces}" ]; then
+        param_names=$(printf '%s\n' "${params_without_braces}" | sed 's/\([^,]*\)/\1\n/g' | grep -oE '[^ ]*$')
+        if [ -z "${param_names}" ]; then
+            printf '%s\n' "Line ${CURLINE}: Could not parse function parameters." >&2
+            VALID=0
+        fi
+    else
+        param_names=""
     fi
     params=""
     for param in ${param_names}; do
@@ -42,7 +47,7 @@ while read -r line; do
         params="${params}${param}, "
     done
     params=$(printf '%s\n' "${params}" | sed 's/^\(.*\), $/\1/g')
-    if [ -z "${params}" ]; then
+    if [ -z "${params}" -a ! -z "${params_without_braces}" ]; then
         printf '%s\n' "Line ${CURLINE}: Parameters empty. Please re-check regex'es used." >&2
         VALID=0
     fi
@@ -66,13 +71,38 @@ ${WRAPPERS}
 
 ${rtype} ${fnname} ${fnsig}
 {
+EOF
+        )
+        case $rtype in
+        NTSTATUS*)
+            WRAPPERS=$(cat <<EOF
+${WRAPPERS}
     if (_${fnname} == NULL)
         return STATUS_PROCEDURE_NOT_FOUND;
 
     return _${fnname} (${params});
 }
+
+${rtype} Wrapper${fnname} ${fnsig}
+{
+    return _${fnname} (${params});
+}
 EOF
-        )
+            )
+        ;;
+        PVOID*)
+            WRAPPERS=$(cat <<EOF
+${WRAPPERS}
+    return _${fnname} (${params});
+}
+
+${rtype} Wrapper${fnname} ${fnsig}
+{
+    return _${fnname} (${params});
+}
+EOF
+            )
+        esac
     fi
 done < "${FN_FILE}"
 
