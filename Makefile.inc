@@ -49,7 +49,7 @@ RC = $(LOCAL_MINGW64_RC)
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-m64 -fPIC -fvisibility=hidden \
-	-ffunction-sections -fdata-sections -fno-builtin -ffreestanding \
+	-fno-builtin -ffreestanding \
 	-fno-stack-protector -mno-stack-arg-probe \
 	-I$(DPP_ROOT)/CRT -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
@@ -84,8 +84,7 @@ DRIVER_LDFLAGS := -shared \
 	-Wl,--exclude-all-symbols \
 	-Wl,--entry,_CRT_DriverEntry \
 	$(PRINT_LDSCRIPT) \
-	-nostartfiles -nodefaultlibs -nostdlib \
-	-T$(DPP_ROOT)/ld-script.txt
+	-nostartfiles -nodefaultlibs -nostdlib
 DRIVER_LIBS := -lntoskrnl -lhal
 USER_LDFLAGS := -Wl,--dynamicbase -Wl,--nxcompat -Wl,--gc-sections
 USER_LIBS :=
@@ -139,7 +138,7 @@ define BUILD_C_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CC) -std=c99 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) -c $(1) -o $(2)
+	$(Q)$(CC) -std=gnu99 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) -c $(1) -o $(2)
 	@echo 'CC  $(2)'
 endef
 

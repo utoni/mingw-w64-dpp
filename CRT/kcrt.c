@@ -6,6 +6,8 @@
 
 #include <ntddk.h>
 
+#include "except.h"
+
 #define KCRT_POOL_DEFAULT_TAG 0xDEADBEEF
 
 extern void (*__CTOR_LIST__)();

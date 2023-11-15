@@ -49,12 +49,12 @@ endif
 
 $(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/kcrt.c
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
-	$(Q)$(CC) -std=c99 $(CFLAGS) -c CRT/kcrt.c -o $@
+	$(Q)$(CC) -std=gnu99 $(CFLAGS) -c CRT/kcrt.c -o $@
 	@echo 'CC  $@'
 
 $(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/ntdll_zw_functions.c
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
-	$(Q)$(CC) -std=c99 $(CFLAGS) -c CRT/ntdll_zw_functions.c -o $@
+	$(Q)$(CC) -std=gnu99 $(CFLAGS) -c CRT/ntdll_zw_functions.c -o $@
 	@echo 'CC  $@'
 
 $(LIBCRT_BUILD_DIR)/eastl_compat$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/eastl_compat.cpp

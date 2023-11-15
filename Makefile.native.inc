@@ -21,7 +21,6 @@ CXX = /usr/bin/c++
 AR = /usr/bin/ar
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing -Wno-c++20-compat \
 	-m64 -fPIC -fvisibility=hidden \
-	-ffunction-sections -fdata-sections \
 	-I$(DPP_ROOT)/CRT -DNATIVE=1
 ifneq ($(WERROR),)
 CFLAGS += -Werror
@@ -68,7 +67,7 @@ define BUILD_C_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CC) -std=c99 $(CFLAGS) -c $(1) -o $(2)
+	$(Q)$(CC) -std=gnu99 $(CFLAGS) -c $(1) -o $(2)
 	@echo 'CC  $(2)'
 endef
 
