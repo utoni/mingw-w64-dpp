@@ -4,15 +4,17 @@
 
 typedef NTSTATUS NTAPI (*ObOpenObjectByPointer_t) (_In_ PVOID obj, _In_ ULONG HandleAttributes, _In_ PACCESS_STATE PassedAccessState, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_TYPE objType, _In_ KPROCESSOR_MODE AccessMode, _Out_ PHANDLE Handle);
 typedef NTSTATUS NTAPI (*MmCopyMemory_t) (_In_ PVOID TargetAddress, _In_ PVOID SourceAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Flags, _Out_ PSIZE_T NumberOfBytesTransferred);
+typedef NTSTATUS NTAPI (*MmCopyVirtualMemory_t) (_In_ PEPROCESS SourceProcess, _In_ PVOID SourceAddress, _In_ PEPROCESS TargetProcess, _In_ PVOID TargetAddress, _In_ SIZE_T BufferSize, _In_ KPROCESSOR_MODE PreviousMode, _Out_ PSIZE_T ReturnSize);
 typedef PVOID NTAPI (*RtlLookupFunctionEntry_t) (_In_ DWORD64 ControlPc, _Out_ PDWORD64 ImageBase, _Out_ PVOID HistoryTable);
 typedef NTSTATUS NTAPI (*ZwTraceControl_t) (_In_ ULONG FunctionCode, PVOID InBuffer, _In_ ULONG InBufferLen, PVOID OutBuffer, _In_ ULONG OutBufferLen, _Out_ PULONG ReturnLength);
 typedef NTSTATUS NTAPI (*ZwTraceEvent_t) (_In_ HANDLE TraceHandle, _In_ ULONG Flags, _In_ ULONG FieldSize, _In_ PVOID Fields);
 typedef NTSTATUS NTAPI (*ZwQueryVirtualMemory_t) (_In_ HANDLE ProcessHandle, _In_ PVOID BaseAddress, _In_ int MemoryInformationClass, _Out_ PVOID MemoryInformation, _In_ SIZE_T MemoryInformationLength, _Out_ PSIZE_T ReturnLength);
-typedef NTSTATUS NTAPI (*ZwProtectVirtualMemory_t) (_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PULONG NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection);
+typedef NTSTATUS NTAPI (*ZwProtectVirtualMemory_t) (_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PSIZE_T NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection);
 typedef NTSTATUS NTAPI (*ZwQuerySystemInformation_t) (_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength);
 
 static ObOpenObjectByPointer_t _ObOpenObjectByPointer = NULL;
 static MmCopyMemory_t _MmCopyMemory = NULL;
+static MmCopyVirtualMemory_t _MmCopyVirtualMemory = NULL;
 static RtlLookupFunctionEntry_t _RtlLookupFunctionEntry = NULL;
 static ZwTraceControl_t _ZwTraceControl = NULL;
 static ZwTraceEvent_t _ZwTraceEvent = NULL;
@@ -37,6 +39,13 @@ int __cdecl ntdll_zw_functions (void)
     if (_MmCopyMemory == NULL)
     {
         DbgPrint("%s\n", "System routine MmCopyMemory not found.");
+        retval++;
+    }
+    RtlInitUnicodeString(&fnName, L"MmCopyVirtualMemory");
+    _MmCopyVirtualMemory = MmGetSystemRoutineAddress(&fnName);
+    if (_MmCopyVirtualMemory == NULL)
+    {
+        DbgPrint("%s\n", "System routine MmCopyVirtualMemory not found.");
         retval++;
     }
     RtlInitUnicodeString(&fnName, L"RtlLookupFunctionEntry");
@@ -112,6 +121,19 @@ NTSTATUS NTAPI WrapperMmCopyMemory (_In_ PVOID TargetAddress, _In_ PVOID SourceA
     return _MmCopyMemory (TargetAddress, SourceAddress, NumberOfBytes, Flags, NumberOfBytesTransferred);
 }
 
+NTSTATUS NTAPI MmCopyVirtualMemory (_In_ PEPROCESS SourceProcess, _In_ PVOID SourceAddress, _In_ PEPROCESS TargetProcess, _In_ PVOID TargetAddress, _In_ SIZE_T BufferSize, _In_ KPROCESSOR_MODE PreviousMode, _Out_ PSIZE_T ReturnSize)
+{
+    if (_MmCopyVirtualMemory == NULL)
+        return STATUS_PROCEDURE_NOT_FOUND;
+
+    return _MmCopyVirtualMemory (SourceProcess, SourceAddress, TargetProcess, TargetAddress, BufferSize, PreviousMode, ReturnSize);
+}
+
+NTSTATUS NTAPI WrapperMmCopyVirtualMemory (_In_ PEPROCESS SourceProcess, _In_ PVOID SourceAddress, _In_ PEPROCESS TargetProcess, _In_ PVOID TargetAddress, _In_ SIZE_T BufferSize, _In_ KPROCESSOR_MODE PreviousMode, _Out_ PSIZE_T ReturnSize)
+{
+    return _MmCopyVirtualMemory (SourceProcess, SourceAddress, TargetProcess, TargetAddress, BufferSize, PreviousMode, ReturnSize);
+}
+
 PVOID NTAPI RtlLookupFunctionEntry (_In_ DWORD64 ControlPc, _Out_ PDWORD64 ImageBase, _Out_ PVOID HistoryTable)
 {
     return _RtlLookupFunctionEntry (ControlPc, ImageBase, HistoryTable);
@@ -161,7 +183,7 @@ NTSTATUS NTAPI WrapperZwQueryVirtualMemory (_In_ HANDLE ProcessHandle, _In_ PVOI
     return _ZwQueryVirtualMemory (ProcessHandle, BaseAddress, MemoryInformationClass, MemoryInformation, MemoryInformationLength, ReturnLength);
 }
 
-NTSTATUS NTAPI ZwProtectVirtualMemory (_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PULONG NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection)
+NTSTATUS NTAPI ZwProtectVirtualMemory (_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PSIZE_T NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection)
 {
     if (_ZwProtectVirtualMemory == NULL)
         return STATUS_PROCEDURE_NOT_FOUND;
@@ -169,7 +191,7 @@ NTSTATUS NTAPI ZwProtectVirtualMemory (_In_ HANDLE ProcessHandle, _In_ _Out_ PVO
     return _ZwProtectVirtualMemory (ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
 }
 
-NTSTATUS NTAPI WrapperZwProtectVirtualMemory (_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PULONG NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection)
+NTSTATUS NTAPI WrapperZwProtectVirtualMemory (_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PSIZE_T NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection)
 {
     return _ZwProtectVirtualMemory (ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
 }

@@ -1,8 +1,9 @@
 NTSTATUS NTAPI ObOpenObjectByPointer (_In_ PVOID obj, _In_ ULONG HandleAttributes, _In_ PACCESS_STATE PassedAccessState, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_TYPE objType, _In_ KPROCESSOR_MODE AccessMode, _Out_ PHANDLE Handle);
 NTSTATUS NTAPI MmCopyMemory (_In_ PVOID TargetAddress, _In_ PVOID SourceAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Flags, _Out_ PSIZE_T NumberOfBytesTransferred);
+NTSTATUS NTAPI MmCopyVirtualMemory (_In_ PEPROCESS SourceProcess, _In_ PVOID SourceAddress, _In_ PEPROCESS TargetProcess, _In_ PVOID TargetAddress, _In_ SIZE_T BufferSize, _In_ KPROCESSOR_MODE PreviousMode, _Out_ PSIZE_T ReturnSize);
 NTSYSAPI PVOID NTAPI RtlLookupFunctionEntry (_In_ DWORD64 ControlPc, _Out_ PDWORD64 ImageBase, _Out_ PVOID HistoryTable);
 NTSYSCALLAPI NTSTATUS NTAPI ZwTraceControl (_In_ ULONG FunctionCode, PVOID InBuffer, _In_ ULONG InBufferLen, PVOID OutBuffer, _In_ ULONG OutBufferLen, _Out_ PULONG ReturnLength)
 NTSYSCALLAPI NTSTATUS NTAPI ZwTraceEvent (_In_ HANDLE TraceHandle, _In_ ULONG Flags, _In_ ULONG FieldSize, _In_ PVOID Fields)
 NTSYSCALLAPI NTSTATUS NTAPI ZwQueryVirtualMemory(_In_ HANDLE ProcessHandle, _In_ PVOID BaseAddress, _In_ int MemoryInformationClass, _Out_ PVOID MemoryInformation, _In_ SIZE_T MemoryInformationLength, _Out_ PSIZE_T ReturnLength);
-NTSYSCALLAPI NTSTATUS NTAPI ZwProtectVirtualMemory(_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PULONG NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection);
+NTSYSAPI NTSTATUS NTAPI ZwProtectVirtualMemory(_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PSIZE_T NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection);
 NTSYSCALLAPI NTSTATUS NTAPI ZwQuerySystemInformation(_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength);
