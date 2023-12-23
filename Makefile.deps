@@ -38,6 +38,24 @@ else
 endif
 	@echo 'AR  $@'
 
+$(LIBCNATIVE_STATIC_LIB): $(LIBCNATIVE_OBJECTS)
+	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+ifneq ($(Q),@)
+	$(Q)$(AR) -rsv '$@' $(LIBCNATIVE_OBJECTS)
+else
+	$(Q)$(AR) -rs '$@' $(LIBCNATIVE_OBJECTS) 2>/dev/null >/dev/null
+endif
+	@echo 'AR  $@'
+
+$(LIBCXXNATIVE_STATIC_LIB): $(LIBCXXNATIVE_OBJECTS)
+	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+ifneq ($(Q),@)
+	$(Q)$(AR) -rsv '$@' $(LIBCXXNATIVE_OBJECTS)
+else
+	$(Q)$(AR) -rs '$@' $(LIBCXXNATIVE_OBJECTS) 2>/dev/null >/dev/null
+endif
+	@echo 'AR  $@'
+
 $(LIBUSERCRT_STATIC_LIB): $(LIBUSERCRT_OBJECTS)
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
 ifneq ($(Q),@)
@@ -56,6 +74,11 @@ $(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/nt
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
 	$(Q)$(CC) -std=gnu99 $(CFLAGS) -c CRT/ntdll_zw_functions.c -o $@
 	@echo 'CC  $@'
+
+$(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/ntdll_zw_functions.c
+	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) -c CRT/ntdll_zw_functions.c -o $@
+	@echo 'CXX $@'
 
 $(LIBCRT_BUILD_DIR)/eastl_compat$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/eastl_compat.cpp
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
@@ -141,6 +164,8 @@ deps-build: \
 	$(EASTL_STATIC_LIB) \
 	$(LIBCRT_STATIC_LIB) \
 	$(LIBCXXRT_STATIC_LIB) \
+	$(LIBCNATIVE_STATIC_LIB) \
+	$(LIBCXXNATIVE_STATIC_LIB) \
 	$(LIBUSERCRT_STATIC_LIB) \
 	$(SIGNTOOL_PREFIX)
 

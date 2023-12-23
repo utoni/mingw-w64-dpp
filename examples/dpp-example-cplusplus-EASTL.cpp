@@ -31,6 +31,15 @@ typedef struct
 } UNICODE_STRING;
 typedef UNICODE_STRING * PUNICODE_STRING;
 typedef int NTSTATUS;
+#else
+extern "C" NTSTATUS NTAPI ZwQuerySystemInformation(_In_ int SystemInformationClass,
+                                               _Inout_ PVOID SystemInformation,
+                                               _In_ ULONG SystemInformationLength,
+                                               _Out_opt_ PULONG ReturnLength);
+extern "C" NTSTATUS NTAPI WrapperZwQuerySystemInformation(_In_ int SystemInformationClass,
+                                                      _Inout_ PVOID SystemInformation,
+                                                      _In_ ULONG SystemInformationLength,
+                                                      _Out_opt_ PULONG ReturnLength);
 #endif
 
 struct GeneratorUint32
@@ -131,6 +140,27 @@ void more_stl_test()
     DbgPrint("fill_me size: %zu\n", fill_me.size());
 }
 
+#ifndef BUILD_USERMODE
+static void zw_test()
+{
+    NTSTATUS ret;
+    ULONG memoryNeeded = 0;
+
+    ret = ZwQuerySystemInformation(0x5, NULL, 0, &memoryNeeded);
+    if (ret != STATUS_INFO_LENGTH_MISMATCH || !memoryNeeded)
+    {
+        DbgPrint("ZwQuerySystemInformation failed with 0x%lX (memory needed: %lu)\n", ret, memoryNeeded);
+    }
+
+    memoryNeeded = 0;
+    ret = WrapperZwQuerySystemInformation(0x5, NULL, 0, &memoryNeeded);
+    if (ret != STATUS_INFO_LENGTH_MISMATCH || !memoryNeeded)
+    {
+        DbgPrint("ZwQuerySystemInformation failed 0x%lX (memory needed: %lu)\n", ret, memoryNeeded);
+    }
+}
+#endif
+
 extern "C"
 {
 #ifndef BUILD_USERMODE
@@ -144,6 +174,7 @@ extern "C"
 
         DbgPrint("%s\n", "Hello ring0!");
 
+        zw_test();
         stl_test();
         more_stl_test();
 

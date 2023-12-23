@@ -10,6 +10,14 @@ extern NTSTATUS NTAPI ZwProtectVirtualMemory(_In_ HANDLE ProcessHandle,
                                              _In_ _Out_ PULONG NumberOfBytesToProtect,
                                              _In_ ULONG NewAccessProtection,
                                              _Out_ PULONG OldAccessProtection);
+extern NTSTATUS NTAPI ZwQuerySystemInformation(_In_ int SystemInformationClass,
+                                               _Inout_ PVOID SystemInformation,
+                                               _In_ ULONG SystemInformationLength,
+                                               _Out_opt_ PULONG ReturnLength);
+extern NTSTATUS NTAPI WrapperZwQuerySystemInformation(_In_ int SystemInformationClass,
+                                                      _Inout_ PVOID SystemInformation,
+                                                      _In_ ULONG SystemInformationLength,
+                                                      _Out_opt_ PULONG ReturnLength);
 
 int example_exception_handler(_In_ EXCEPTION_POINTERS * lpEP)
 {
@@ -32,6 +40,25 @@ static void another_seh_test()
     __dpptryend(anotherseh);
 }
 
+static void zw_test()
+{
+    NTSTATUS ret;
+    ULONG memoryNeeded = 0;
+
+    ret = ZwQuerySystemInformation(0x5, NULL, 0, &memoryNeeded);
+    if (ret != STATUS_INFO_LENGTH_MISMATCH || !memoryNeeded)
+    {
+        DbgPrint("ZwQuerySystemInformation failed with 0x%lX (memory needed: %lu)\n", ret, memoryNeeded);
+    }
+
+    memoryNeeded = 0;
+    ret = WrapperZwQuerySystemInformation(0x5, NULL, 0, &memoryNeeded);
+    if (ret != STATUS_INFO_LENGTH_MISMATCH || !memoryNeeded)
+    {
+        DbgPrint("ZwQuerySystemInformation failed 0x%lX (memory needed: %lu)\n", ret, memoryNeeded);
+    }
+}
+
 NTSTATUS DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE_STRING RegistryPath)
 {
     (void)DriverObject;
@@ -52,6 +79,7 @@ NTSTATUS DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE_STRING Regis
     __dpptryend(testseh);
 
     another_seh_test();
+    zw_test();
 
     DbgPrint("%s\n", "Disable/Enable Interrupts!");
     _disable();

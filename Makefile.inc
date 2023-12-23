@@ -94,15 +94,21 @@ EASTL_STATIC_LIB := $(DPP_ROOT)/$(EASTL_BUILDDIR)/libEASTL.a
 
 LIBCRT_BUILD_DIR := $(DPP_ROOT)/CRT-build
 LIBCRT_OBJECTS := \
-	$(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).o \
-	$(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o
+	$(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).o
 LIBCXXRT_OBJECTS := \
 	$(LIBCRT_BUILD_DIR)/eastl_compat$(NAME_SUFFIX).opp \
 	$(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).opp \
 	$(LIBCRT_BUILD_DIR)/DriverThread$(NAME_SUFFIX).opp
+LIBCNATIVE_OBJECTS := \
+	$(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o
+LIBCXXNATIVE_OBJECTS := \
+	$(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).opp
+
 LIBUSERCRT_OBJECTS := $(LIBCRT_BUILD_DIR)/ucrt$(NAME_SUFFIX).opp $(LIBCRT_BUILD_DIR)/eastl_compat$(NAME_SUFFIX).opp
 LIBCRT_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libcrt.a
 LIBCXXRT_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libcxxrt.a
+LIBCNATIVE_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libcnative.a
+LIBCXXNATIVE_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libcxxnative.a
 LIBUSERCRT_STATIC_LIB := $(LIBCRT_BUILD_DIR)/libusercrt.a
 
 is_set = \
@@ -122,6 +128,8 @@ define CHECK_REQUIRED_PATHS
 	$(call is_set,$(EASTL_STATIC_LIB),Makefile argument EASTL_STATIC_LIB missing)
 	$(call is_set,$(LIBCRT_STATIC_LIB),Makefile argument LIBCRT_STATIC_LIB missing)
 	$(call is_set,$(LIBCXXRT_STATIC_LIB),Makefile argument LIBCXXRT_STATIC_LIB missing)
+	$(call is_set,$(LIBCNATIVE_STATIC_LIB),Makefile argument LIBCNATIVE_STATIC_LIB missing)
+	$(call is_set,$(LIBCXXNATIVE_STATIC_LIB),Makefile argument LIBCXXNATIVE_STATIC_LIB missing)
 	$(call is_set,$(LIBUSERCRT_STATIC_LIB),Makefile argument LIBUSERCRT_STATIC_LIB missing)
 	$(call path_exists,$(CC))
 	$(call path_exists,$(CXX))
@@ -131,6 +139,8 @@ define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(EASTL_STATIC_LIB))
 	$(call path_exists,$(LIBCRT_STATIC_LIB))
 	$(call path_exists,$(LIBCXXRT_STATIC_LIB))
+	$(call path_exists,$(LIBCNATIVE_STATIC_LIB))
+	$(call path_exists,$(LIBCXXNATIVE_STATIC_LIB))
 	$(call path_exists,$(LIBUSERCRT_STATIC_LIB))
 endef
 
@@ -161,6 +171,7 @@ define LINK_C_KERNEL_TARGET
 		-o '$(2)' \
 		$(1) \
 		$(LIBCRT_STATIC_LIB) \
+		$(LIBCNATIVE_STATIC_LIB) \
 		$(DRIVER_LIBS) \
 		$(LDFLAGS_$(2))
 	@echo 'LD  $(2)'
@@ -194,6 +205,7 @@ define LINK_CPP_KERNEL_TARGET
 		$(1) \
 		$(EASTL_STATIC_LIB) \
 		$(LIBCRT_STATIC_LIB) \
+		$(LIBCXXNATIVE_STATIC_LIB) \
 		$(LIBCXXRT_STATIC_LIB) \
 		$(DRIVER_LIBS) \
 		$(LDFLAGS_$(2))

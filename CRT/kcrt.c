@@ -280,7 +280,6 @@ NTSTATUS __cdecl _CRT_DriverEntry(struct _DRIVER_OBJECT * DriverObject, PUNICODE
     int zw_retval = ntdll_zw_functions();
     if (zw_retval != 0)
     {
-        DbgPrint("ERROR: Missing %d required system routines.\n", zw_retval);
         return STATUS_NOT_IMPLEMENTED;
     }
 
