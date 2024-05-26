@@ -8,6 +8,7 @@
 extern "C" {
 #endif
 
+typedef PVOID NTAPI (*MmMapIoSpaceEx_t) (_In_ PHYSICAL_ADDRESS PhysicalAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Protect);
 typedef NTSTATUS NTAPI (*ObOpenObjectByPointer_t) (_In_ PVOID obj, _In_ ULONG HandleAttributes, _In_ PACCESS_STATE PassedAccessState, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_TYPE objType, _In_ KPROCESSOR_MODE AccessMode, _Out_ PHANDLE Handle);
 typedef NTSTATUS NTAPI (*MmCopyMemory_t) (_In_ PVOID TargetAddress, _In_ PVOID SourceAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Flags, _Out_ PSIZE_T NumberOfBytesTransferred);
 typedef NTSTATUS NTAPI (*MmCopyVirtualMemory_t) (_In_ PEPROCESS SourceProcess, _In_ PVOID SourceAddress, _In_ PEPROCESS TargetProcess, _In_ PVOID TargetAddress, _In_ SIZE_T BufferSize, _In_ KPROCESSOR_MODE PreviousMode, _Out_ PSIZE_T ReturnSize);
@@ -18,6 +19,7 @@ typedef NTSTATUS NTAPI (*ZwQueryVirtualMemory_t) (_In_ HANDLE ProcessHandle, _In
 typedef NTSTATUS NTAPI (*ZwProtectVirtualMemory_t) (_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PSIZE_T NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection);
 typedef NTSTATUS NTAPI (*ZwQuerySystemInformation_t) (_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength);
 
+static MmMapIoSpaceEx_t _MmMapIoSpaceEx = NULL;
 static ObOpenObjectByPointer_t _ObOpenObjectByPointer = NULL;
 static MmCopyMemory_t _MmCopyMemory = NULL;
 static MmCopyVirtualMemory_t _MmCopyVirtualMemory = NULL;
@@ -33,6 +35,21 @@ int __cdecl ntdll_zw_functions (void)
     int retval = 0;
     UNICODE_STRING fnName;
 
+#ifdef __cplusplus
+    RtlInitUnicodeString(&fnName, skCrypt(L"MmMapIoSpaceEx"));
+#else
+    RtlInitUnicodeString(&fnName, L"MmMapIoSpaceEx");
+#endif
+    _MmMapIoSpaceEx = (MmMapIoSpaceEx_t)MmGetSystemRoutineAddress(&fnName);
+    if (_MmMapIoSpaceEx == NULL)
+    {
+#ifdef __cplusplus
+        DbgPrint(skCrypt("%s\n"), skCrypt("System routine MmMapIoSpaceEx not found."));
+#else
+        DbgPrint("%s\n", "System routine MmMapIoSpaceEx not found.");
+#endif
+        retval++;
+    }
 #ifdef __cplusplus
     RtlInitUnicodeString(&fnName, skCrypt(L"ObOpenObjectByPointer"));
 #else
@@ -172,6 +189,16 @@ int __cdecl ntdll_zw_functions (void)
     return retval;
 }
 
+
+PVOID NTAPI MmMapIoSpaceEx (_In_ PHYSICAL_ADDRESS PhysicalAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Protect)
+{
+    return _MmMapIoSpaceEx (PhysicalAddress, NumberOfBytes, Protect);
+}
+
+PVOID NTAPI WrapperMmMapIoSpaceEx (_In_ PHYSICAL_ADDRESS PhysicalAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Protect)
+{
+    return _MmMapIoSpaceEx (PhysicalAddress, NumberOfBytes, Protect);
+}
 
 NTSTATUS NTAPI ObOpenObjectByPointer (_In_ PVOID obj, _In_ ULONG HandleAttributes, _In_ PACCESS_STATE PassedAccessState, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_TYPE objType, _In_ KPROCESSOR_MODE AccessMode, _Out_ PHANDLE Handle)
 {
