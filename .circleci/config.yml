@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: ubuntu:latest
+      - image: ubuntu:jammy
     steps:
       - checkout
       - run: export DEBIAN_FRONTEND=noninteractive
