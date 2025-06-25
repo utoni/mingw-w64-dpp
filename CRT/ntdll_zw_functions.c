@@ -18,6 +18,9 @@ typedef NTSTATUS NTAPI (*ZwTraceEvent_t) (_In_ HANDLE TraceHandle, _In_ ULONG Fl
 typedef NTSTATUS NTAPI (*ZwQueryVirtualMemory_t) (_In_ HANDLE ProcessHandle, _In_ PVOID BaseAddress, _In_ int MemoryInformationClass, _Out_ PVOID MemoryInformation, _In_ SIZE_T MemoryInformationLength, _Out_ PSIZE_T ReturnLength);
 typedef NTSTATUS NTAPI (*ZwProtectVirtualMemory_t) (_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PSIZE_T NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection);
 typedef NTSTATUS NTAPI (*ZwQuerySystemInformation_t) (_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength);
+typedef NTSTATUS NTAPI (*_ZwCreateFile_t) (_Out_ PHANDLE FileHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PLARGE_INTEGER AllocationSize, _In_ ULONG FileAttributes, _In_ ULONG ShareAccess, _In_ ULONG CreateDisposition, _In_ ULONG CreateOptions, _In_ PVOID EaBuffer, _In_ ULONG EaLength);
+typedef NTSTATUS NTAPI (*_ZwClose_t) (_In_ HANDLE Handle);
+typedef NTSTATUS NTAPI (*_ZwWriteFile_t) (_In_ HANDLE FileHandle, _In_ HANDLE Event, _In_ PIO_APC_ROUTINE ApcRoutine, _In_ PVOID ApcContext, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PVOID Buffer, _In_ ULONG Length, _In_ PLARGE_INTEGER ByteOffset, _In_ PULONG Key);
 
 static MmMapIoSpaceEx_t _MmMapIoSpaceEx = NULL;
 static ObOpenObjectByPointer_t _ObOpenObjectByPointer = NULL;
@@ -29,6 +32,9 @@ static ZwTraceEvent_t _ZwTraceEvent = NULL;
 static ZwQueryVirtualMemory_t _ZwQueryVirtualMemory = NULL;
 static ZwProtectVirtualMemory_t _ZwProtectVirtualMemory = NULL;
 static ZwQuerySystemInformation_t _ZwQuerySystemInformation = NULL;
+static _ZwCreateFile_t __ZwCreateFile = NULL;
+static _ZwClose_t __ZwClose = NULL;
+static _ZwWriteFile_t __ZwWriteFile = NULL;
 
 int __cdecl ntdll_zw_functions (void)
 {
@@ -185,6 +191,51 @@ int __cdecl ntdll_zw_functions (void)
 #endif
         retval++;
     }
+#ifdef __cplusplus
+    RtlInitUnicodeString(&fnName, skCrypt(L"ZwCreateFile"));
+#else
+    RtlInitUnicodeString(&fnName, L"ZwCreateFile");
+#endif
+    __ZwCreateFile = (_ZwCreateFile_t)MmGetSystemRoutineAddress(&fnName);
+    if (__ZwCreateFile == NULL)
+    {
+#ifdef __cplusplus
+        DbgPrint(skCrypt("%s\n"), skCrypt("System routine ZwCreateFile not found."));
+#else
+        DbgPrint("%s\n", "System routine ZwCreateFile not found.");
+#endif
+        retval++;
+    }
+#ifdef __cplusplus
+    RtlInitUnicodeString(&fnName, skCrypt(L"ZwClose"));
+#else
+    RtlInitUnicodeString(&fnName, L"ZwClose");
+#endif
+    __ZwClose = (_ZwClose_t)MmGetSystemRoutineAddress(&fnName);
+    if (__ZwClose == NULL)
+    {
+#ifdef __cplusplus
+        DbgPrint(skCrypt("%s\n"), skCrypt("System routine ZwClose not found."));
+#else
+        DbgPrint("%s\n", "System routine ZwClose not found.");
+#endif
+        retval++;
+    }
+#ifdef __cplusplus
+    RtlInitUnicodeString(&fnName, skCrypt(L"ZwWriteFile"));
+#else
+    RtlInitUnicodeString(&fnName, L"ZwWriteFile");
+#endif
+    __ZwWriteFile = (_ZwWriteFile_t)MmGetSystemRoutineAddress(&fnName);
+    if (__ZwWriteFile == NULL)
+    {
+#ifdef __cplusplus
+        DbgPrint(skCrypt("%s\n"), skCrypt("System routine ZwWriteFile not found."));
+#else
+        DbgPrint("%s\n", "System routine ZwWriteFile not found.");
+#endif
+        retval++;
+    }
 
     return retval;
 }
@@ -312,6 +363,45 @@ NTSTATUS NTAPI ZwQuerySystemInformation (_In_ int SystemInformationClass, _Inout
 NTSTATUS NTAPI WrapperZwQuerySystemInformation (_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength)
 {
     return _ZwQuerySystemInformation (SystemInformationClass, SystemInformation, SystemInformationLength, ReturnLength);
+}
+
+NTSTATUS NTAPI _ZwCreateFile (_Out_ PHANDLE FileHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PLARGE_INTEGER AllocationSize, _In_ ULONG FileAttributes, _In_ ULONG ShareAccess, _In_ ULONG CreateDisposition, _In_ ULONG CreateOptions, _In_ PVOID EaBuffer, _In_ ULONG EaLength)
+{
+    if (__ZwCreateFile == NULL)
+        return STATUS_PROCEDURE_NOT_FOUND;
+
+    return __ZwCreateFile (FileHandle, DesiredAccess, ObjectAttributes, StatusBlock, AllocationSize, FileAttributes, ShareAccess, CreateDisposition, CreateOptions, EaBuffer, EaLength);
+}
+
+NTSTATUS NTAPI WrapperZwCreateFile (_Out_ PHANDLE FileHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PLARGE_INTEGER AllocationSize, _In_ ULONG FileAttributes, _In_ ULONG ShareAccess, _In_ ULONG CreateDisposition, _In_ ULONG CreateOptions, _In_ PVOID EaBuffer, _In_ ULONG EaLength)
+{
+    return __ZwCreateFile (FileHandle, DesiredAccess, ObjectAttributes, StatusBlock, AllocationSize, FileAttributes, ShareAccess, CreateDisposition, CreateOptions, EaBuffer, EaLength);
+}
+
+NTSTATUS NTAPI _ZwClose (_In_ HANDLE Handle)
+{
+    if (__ZwClose == NULL)
+        return STATUS_PROCEDURE_NOT_FOUND;
+
+    return __ZwClose (Handle);
+}
+
+NTSTATUS NTAPI WrapperZwClose (_In_ HANDLE Handle)
+{
+    return __ZwClose (Handle);
+}
+
+NTSTATUS NTAPI _ZwWriteFile (_In_ HANDLE FileHandle, _In_ HANDLE Event, _In_ PIO_APC_ROUTINE ApcRoutine, _In_ PVOID ApcContext, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PVOID Buffer, _In_ ULONG Length, _In_ PLARGE_INTEGER ByteOffset, _In_ PULONG Key)
+{
+    if (__ZwWriteFile == NULL)
+        return STATUS_PROCEDURE_NOT_FOUND;
+
+    return __ZwWriteFile (FileHandle, Event, ApcRoutine, ApcContext, StatusBlock, Buffer, Length, ByteOffset, Key);
+}
+
+NTSTATUS NTAPI WrapperZwWriteFile (_In_ HANDLE FileHandle, _In_ HANDLE Event, _In_ PIO_APC_ROUTINE ApcRoutine, _In_ PVOID ApcContext, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PVOID Buffer, _In_ ULONG Length, _In_ PLARGE_INTEGER ByteOffset, _In_ PULONG Key)
+{
+    return __ZwWriteFile (FileHandle, Event, ApcRoutine, ApcContext, StatusBlock, Buffer, Length, ByteOffset, Key);
 }
 
 #ifdef __cplusplus

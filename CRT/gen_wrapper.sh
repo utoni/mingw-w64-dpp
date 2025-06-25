@@ -9,6 +9,14 @@ CURLINE=0
 while read -r line; do
     CURLINE=$(expr ${CURLINE} + 1)
     VALID=1
+    SYMBOL_EXISTS=0
+
+    if [ -z "${line}" ]; then
+        continue
+    fi
+    if [ $(printf '%s\n' "${line}" | grep -oE '^#*') ]; then
+        continue
+    fi
 
     rtype=$(printf '%s\n' "${line}" | grep -oE '(NTSTATUS NTAPI|VOID NTAPI|PVOID NTAPI)')
     if [ -z "${rtype}" ]; then
@@ -16,10 +24,17 @@ while read -r line; do
         VALID=0
     fi
 
-    fnname=$(printf '%s\n' "${line}" | grep -oE '(Zw|Rtl|Ob|Mm|Io)[^ (]*')
+    fnname=$(printf '%s\n' "${line}" | grep -oE '(_|)(Zw|Rtl|Ob[^j]|Mm|Io)[^ (]*')
     if [ -z "${fnname}" ]; then
         printf '%s\n' "Line ${CURLINE}: Missing function name." >&2
         VALID=0
+    fi
+    if [ $(printf '%s\n' "${fnname}" | wc -l) -ne 1 ]; then
+        printf '%s\n' "Invalid function name '${fnname}'." >&2
+        VALID=0
+    fi
+    if [ $(printf '%s\n' "${fnname}" | grep -oE '^_*') ]; then
+        SYMBOL_EXISTS=1
     fi
 
     fnsig=$(printf '%s\n' "${line}" | grep -oE '\([^;]*')
@@ -53,22 +68,29 @@ while read -r line; do
     fi
 
     if [ ${VALID} -eq 1 ]; then
-        TYPEDEFS="${TYPEDEFS}\ntypedef ${rtype} (*${fnname}_t) ${fnsig};"
-        STATICS="${STATICS}\nstatic ${fnname}_t _${fnname} = NULL;"
+        TYPE="${fnname}_t"
+        VAR="_${fnname}"
+        TYPEDEFS="${TYPEDEFS}\ntypedef ${rtype} (*${TYPE}) ${fnsig};"
+        STATICS="${STATICS}\nstatic ${TYPE} ${VAR} = NULL;"
+        if [ ${SYMBOL_EXISTS} -eq 1 ]; then
+            fnname_str=$(printf '%s\n' "${fnname}" | sed 's/^\(.\)\{1\}//g')
+        else
+            fnname_str="${fnname}"
+        fi
         INITS=$(cat <<EOF
 ${INITS}
 #ifdef __cplusplus
-    RtlInitUnicodeString(&fnName, skCrypt(L"${fnname}"));
+    RtlInitUnicodeString(&fnName, skCrypt(L"${fnname_str}"));
 #else
-    RtlInitUnicodeString(&fnName, L"${fnname}");
+    RtlInitUnicodeString(&fnName, L"${fnname_str}");
 #endif
-    _${fnname} = (${fnname}_t)MmGetSystemRoutineAddress(&fnName);
-    if (_${fnname} == NULL)
+    ${VAR} = (${TYPE})MmGetSystemRoutineAddress(&fnName);
+    if (${VAR} == NULL)
     {
 #ifdef __cplusplus
-        DbgPrint(skCrypt("%s\\\n"), skCrypt("System routine ${fnname} not found."));
+        DbgPrint(skCrypt("%s\\\n"), skCrypt("System routine ${fnname_str} not found."));
 #else
-        DbgPrint("%s\\\n", "System routine ${fnname} not found.");
+        DbgPrint("%s\\\n", "System routine ${fnname_str} not found.");
 #endif
         retval++;
     }
@@ -85,15 +107,15 @@ EOF
         NTSTATUS*)
             WRAPPERS=$(cat <<EOF
 ${WRAPPERS}
-    if (_${fnname} == NULL)
+    if (${VAR} == NULL)
         return STATUS_PROCEDURE_NOT_FOUND;
 
-    return _${fnname} (${params});
+    return ${VAR} (${params});
 }
 
-${rtype} Wrapper${fnname} ${fnsig}
+${rtype} Wrapper${fnname_str} ${fnsig}
 {
-    return _${fnname} (${params});
+    return ${VAR} (${params});
 }
 EOF
             )
@@ -101,12 +123,12 @@ EOF
         PVOID*)
             WRAPPERS=$(cat <<EOF
 ${WRAPPERS}
-    return _${fnname} (${params});
+    return ${VAR} (${params});
 }
 
 ${rtype} Wrapper${fnname} ${fnsig}
 {
-    return _${fnname} (${params});
+    return ${VAR} (${params});
 }
 EOF
             )
@@ -148,3 +170,5 @@ cat <<EOF
 };
 #endif
 EOF
+
+printf '%s lines parsed\n' "${CURLINE}" >&2

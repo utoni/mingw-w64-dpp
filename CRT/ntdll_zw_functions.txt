@@ -1,3 +1,7 @@
+# Some functions that get resolved at runtime
+# They can always be called prefixed with "Wrapper" i.e. MmCopyMemory(...) becomes WrapperMmCopyMemory(...)
+# If not prefixed with '_', MmCopyMemory(...) should also work
+
 PVOID NTAPI MmMapIoSpaceEx(_In_ PHYSICAL_ADDRESS PhysicalAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Protect);
 NTSTATUS NTAPI ObOpenObjectByPointer (_In_ PVOID obj, _In_ ULONG HandleAttributes, _In_ PACCESS_STATE PassedAccessState, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_TYPE objType, _In_ KPROCESSOR_MODE AccessMode, _Out_ PHANDLE Handle);
 NTSTATUS NTAPI MmCopyMemory (_In_ PVOID TargetAddress, _In_ PVOID SourceAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Flags, _Out_ PSIZE_T NumberOfBytesTransferred);
@@ -8,3 +12,8 @@ NTSYSCALLAPI NTSTATUS NTAPI ZwTraceEvent (_In_ HANDLE TraceHandle, _In_ ULONG Fl
 NTSYSCALLAPI NTSTATUS NTAPI ZwQueryVirtualMemory(_In_ HANDLE ProcessHandle, _In_ PVOID BaseAddress, _In_ int MemoryInformationClass, _Out_ PVOID MemoryInformation, _In_ SIZE_T MemoryInformationLength, _Out_ PSIZE_T ReturnLength);
 NTSYSAPI NTSTATUS NTAPI ZwProtectVirtualMemory(_In_ HANDLE ProcessHandle, _In_ _Out_ PVOID* BaseAddress, _In_ _Out_ PSIZE_T NumberOfBytesToProtect, _In_ ULONG NewAccessProtection, _Out_ PULONG OldAccessProtection);
 NTSYSCALLAPI NTSTATUS NTAPI ZwQuerySystemInformation(_In_ int SystemInformationClass, _Inout_ PVOID SystemInformation, _In_ ULONG SystemInformationLength, _Out_opt_ PULONG ReturnLength);
+
+# Prefixed with a '_', the resulting function should only get called as "Wrapper" i.e. _ZwClose(...) will become WrapperZwClose(...)
+NTSYSAPI NTSTATUS NTAPI _ZwCreateFile(_Out_ PHANDLE FileHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PLARGE_INTEGER AllocationSize, _In_ ULONG FileAttributes, _In_ ULONG ShareAccess, _In_ ULONG CreateDisposition, _In_ ULONG CreateOptions, _In_ PVOID EaBuffer, _In_ ULONG EaLength);
+NTSYSAPI NTSTATUS NTAPI _ZwClose(_In_ HANDLE Handle);
+NTSYSAPI NTSTATUS NTAPI _ZwWriteFile(_In_ HANDLE FileHandle, _In_ HANDLE Event, _In_ PIO_APC_ROUTINE ApcRoutine, _In_ PVOID ApcContext, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PVOID Buffer, _In_ ULONG Length, _In_ PLARGE_INTEGER ByteOffset, _In_ PULONG Key);
