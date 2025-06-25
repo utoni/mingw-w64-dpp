@@ -125,6 +125,22 @@ int TestArray()
 		VERIFY(!(a >= c));
 		VERIFY(!(a  > c));
 
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+		VERIFY( (a <=> b) == 0);
+		VERIFY(!((a <=> b) != 0));
+		VERIFY(!((a <=> b) < 0));
+		VERIFY( (a <=> b) <= 0);
+		VERIFY( (a <=> b) >= 0);
+		VERIFY(!((a <=> b) > 0));
+
+		VERIFY(!((a <=> c) == 0));
+		VERIFY( (a <=> c) != 0);
+		VERIFY( (a <=> c) < 0);
+		VERIFY( (a <=> c) <= 0);
+		VERIFY(!((a <=> c) >= 0));
+		VERIFY(!((a <=> c) > 0));
+#endif
+
 		// deduction guides
 		#ifdef __cpp_deduction_guides
 			array deduced {1,2,3,4,5};
@@ -132,6 +148,37 @@ int TestArray()
 			static_assert(eastl::is_same_v<decltype(deduced)::value_type, int>, "deduced array value_type mismatch");
 			VERIFY(deduced.size() == 5);
 		#endif
+
+		// structured binding
+
+		{
+			eastl::array<int, 5> aCopy = a;
+			auto&& [a0, a1, a2, a3, a4] = aCopy;
+
+			VERIFY(a0 == aCopy[0]);
+			VERIFY(a1 == aCopy[1]);
+			VERIFY(a2 == aCopy[2]);
+			VERIFY(a3 == aCopy[3]);
+			VERIFY(a4 == aCopy[4]);
+
+			a0 = 100;
+			VERIFY(aCopy[0] == 100);
+
+			a4 = 0;
+			VERIFY(aCopy[4] == 0);
+
+			// The deduced type may or may not be a reference type; it is an aliased type,
+			//  as per https://en.cppreference.com/w/cpp/language/structured_binding:
+			//  > Like a reference, a structured binding is an alias to an existing object. Unlike a reference,
+			//    the type of a structured binding does not have to be a reference type.
+			// Any reference specifier is thus removed to check only the type & its const qualifier
+			static_assert(eastl::is_same_v<eastl::remove_reference_t<decltype(a0)>, int>);
+
+			const eastl::array<int, 5> aConstCopy = a;
+			auto&& [aConst0, aConst1, aConst2, aConst3, aConst4] = aConstCopy;
+
+			static_assert(eastl::is_same_v<eastl::remove_reference_t<decltype(aConst0)>, const int>);
+		}
 	}
 
 	// constexpr tests

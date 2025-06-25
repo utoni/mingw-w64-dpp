@@ -162,15 +162,59 @@ int TestSet()
 
 	{ // set erase_if tests
 		set<int> s = {0, 1, 2, 3, 4};
-		eastl::erase_if(s, [](auto i) { return i % 2 == 0;});
+		auto numErased = eastl::erase_if(s, [](auto i) { return i % 2 == 0;});
 		VERIFY((s == set<int>{1,3}));
+		VERIFY(numErased == 3);
 	}
 
 	{ // multiset erase_if tests
 		multiset<int> s = {0, 0, 0, 0, 0, 1, 1, 1, 2, 3, 3, 3, 4};
-		eastl::erase_if(s, [](auto i) { return i % 2 == 0;});
+		auto numErased = eastl::erase_if(s, [](auto i) { return i % 2 == 0;});
 		VERIFY((s == multiset<int>{1, 1, 1, 3, 3, 3}));
+		VERIFY(numErased == 7);
 	}
+
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+	{ // Test set <=>
+	    set<int> s1 = {0, 1, 2, 3, 4};
+	    set<int> s2 = {4, 3, 2, 1, 0};
+	    set<int> s3 = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+	    set<int> s4 = {1, 2, 3, 4, 5, 6};
+	    set<int> s5 = {9};
+
+	    VERIFY(s1 == s2);
+	    VERIFY(s1 != s3);
+	    VERIFY(s3 > s4);
+	    VERIFY(s5 > s4);
+	    VERIFY(s5 > s3);
+
+	    VERIFY((s1 <=> s2) == 0);
+	    VERIFY((s1 <=> s3) != 0);
+	    VERIFY((s3 <=> s4) > 0);
+	    VERIFY((s5 <=> s4) > 0);
+	    VERIFY((s5 <=> s3) > 0);
+	}
+
+	{ // Test multiset <=>
+	    multiset<int> s1 = {0, 0, 0, 1, 1, 2, 3, 3, 4};
+	    multiset<int> s2 = {4, 3, 3, 2, 1, 1, 0, 0, 0};
+	    multiset<int> s3 = {1, 1, 2, 2, 3, 4, 5, 5, 6, 7, 8, 9, 9};
+	    multiset<int> s4 = {1, 1, 2, 2, 3, 4, 5, 5, 6};
+	    multiset<int> s5 = {9};
+
+	    VERIFY(s1 == s2);
+	    VERIFY(s1 != s3);
+	    VERIFY(s3 > s4);
+	    VERIFY(s5 > s4);
+	    VERIFY(s5 > s3);
+
+	    VERIFY((s1 <=> s2) == 0);
+	    VERIFY((s1 <=> s3) != 0);
+	    VERIFY((s3 <=> s4) > 0);
+	    VERIFY((s5 <=> s4) > 0);
+	    VERIFY((s5 <=> s3) > 0);
+	}
+#endif
 
 	{
 		// user reported regression: ensure container elements are NOT 

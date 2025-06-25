@@ -1258,6 +1258,84 @@ int TestVector()
 		EATEST_VERIFY(!(intArray1 > intArray2));
 	}
 
+	// three way comparison operator
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+	{
+		using namespace eastl;
+
+		vector<int> intArray1(10);
+		vector<int> intArray2(10);
+
+		for (i = 0; i < intArray1.size(); i++)
+		{
+		    intArray1[i] = (int)i; // Make intArray1 equal to intArray2.
+		    intArray2[i] = (int)i;
+		}
+
+		// Verify equality between intArray1 and intArray2
+		EATEST_VERIFY((intArray1 <=> intArray2) == 0);
+		EATEST_VERIFY(!((intArray1 <=> intArray2) != 0));
+		EATEST_VERIFY((intArray1 <=> intArray2) <= 0);
+		EATEST_VERIFY((intArray1 <=> intArray2) >= 0);
+		EATEST_VERIFY(!((intArray1 <=> intArray2) < 0));
+		EATEST_VERIFY(!((intArray1 <=> intArray2) > 0));
+
+		intArray1.push_back(100); // Make intArray1 less than intArray2.
+		intArray2.push_back(101);
+
+		// Verify intArray1 < intArray2
+		EATEST_VERIFY(!((intArray1 <=> intArray2) == 0));
+		EATEST_VERIFY((intArray1 <=> intArray2) != 0);
+		EATEST_VERIFY((intArray1 <=> intArray2) <= 0);
+		EATEST_VERIFY(!((intArray1 <=> intArray2) >= 0));
+		EATEST_VERIFY(((intArray1 <=> intArray2) < 0));
+		EATEST_VERIFY(!((intArray1 <=> intArray2) > 0));
+
+		for (i = 0; i < 3; i++) // Make the length of intArray2 less than intArray1
+			intArray2.pop_back();
+
+		// Verify intArray2.size() < intArray1.size() and intArray2 is a subset of intArray1
+		EATEST_VERIFY(!((intArray1 <=> intArray2) == 0));
+		EATEST_VERIFY((intArray1 <=> intArray2) != 0);
+		EATEST_VERIFY((intArray1 <=> intArray2) >= 0);
+		EATEST_VERIFY(!((intArray1 <=> intArray2) <= 0));
+		EATEST_VERIFY(((intArray1 <=> intArray2) > 0));
+		EATEST_VERIFY(!((intArray1 <=> intArray2) < 0));
+	}
+
+	{
+		using namespace eastl;
+
+		vector<int> intArray1 = {1, 2, 3, 4, 5, 6, 7};
+		vector<int> intArray2 = {7, 6, 5, 4, 3, 2, 1};
+		vector<int> intArray3 = {1, 2, 3, 4};
+
+		struct weak_ordering_vector
+		{
+		    vector<int> vec;
+		    inline std::weak_ordering operator<=>(const weak_ordering_vector& b) const { return vec <=> b.vec; }
+		};
+
+		EATEST_VERIFY(synth_three_way{}(weak_ordering_vector{intArray1}, weak_ordering_vector{intArray2}) == std::weak_ordering::less);
+		EATEST_VERIFY(synth_three_way{}(weak_ordering_vector{intArray3}, weak_ordering_vector{intArray1}) == std::weak_ordering::less);
+		EATEST_VERIFY(synth_three_way{}(weak_ordering_vector{intArray2}, weak_ordering_vector{intArray1}) == std::weak_ordering::greater);
+		EATEST_VERIFY(synth_three_way{}(weak_ordering_vector{intArray2}, weak_ordering_vector{intArray3}) == std::weak_ordering::greater);
+		EATEST_VERIFY(synth_three_way{}(weak_ordering_vector{intArray1}, weak_ordering_vector{intArray1}) == std::weak_ordering::equivalent);
+
+		struct strong_ordering_vector
+		{
+		    vector<int> vec;
+		    inline std::strong_ordering operator<=>(const strong_ordering_vector& b) const { return vec <=> b.vec; }
+		};
+
+		EATEST_VERIFY(synth_three_way{}(strong_ordering_vector{intArray1}, strong_ordering_vector{intArray2}) == std::strong_ordering::less);
+		EATEST_VERIFY(synth_three_way{}(strong_ordering_vector{intArray3}, strong_ordering_vector{intArray1}) == std::strong_ordering::less);
+		EATEST_VERIFY(synth_three_way{}(strong_ordering_vector{intArray2}, strong_ordering_vector{intArray1}) == std::strong_ordering::greater);
+		EATEST_VERIFY(synth_three_way{}(strong_ordering_vector{intArray2}, strong_ordering_vector{intArray3}) == std::strong_ordering::greater);
+		EATEST_VERIFY(synth_three_way{}(strong_ordering_vector{intArray1}, strong_ordering_vector{intArray1}) == std::strong_ordering::equal);
+	}
+#endif
+
 	{
 		using namespace eastl;
 
@@ -1317,7 +1395,7 @@ int TestVector()
 		eastl::vector<TestObject> toTest;
 
 		// InputIterator
-		demoted_iterator<TestObject*, eastl::forward_iterator_tag> toInput(&to);
+		demoted_iterator<TestObject*, EASTL_ITC_NS::forward_iterator_tag> toInput(&to);
 		toTest.assign(toInput, toInput);
 
 		// ForwardIterator
@@ -1637,7 +1715,7 @@ int TestVector()
 		{
 			struct iterator
 			{
-				typedef eastl::input_iterator_tag iterator_category;
+				typedef EASTL_ITC_NS::input_iterator_tag iterator_category;
 				typedef int value_type;
 				typedef ptrdiff_t difference_type;
 				typedef int* pointer;
@@ -1718,20 +1796,24 @@ int TestVector()
 		{
 			eastl::vector<int> v = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-			eastl::erase(v, 5);
+			auto numErased = eastl::erase(v, 5);
 			VERIFY((v == eastl::vector<int> {1, 2, 3, 4, 6, 7, 8, 9}));
+			VERIFY(numErased == 1);
 
-			eastl::erase(v, 2);
+			numErased = eastl::erase(v, 2);
 			VERIFY((v == eastl::vector<int> {1, 3, 4, 6, 7, 8, 9}));
+			VERIFY(numErased == 1);
 
-			eastl::erase(v, 9);
+			numErased = eastl::erase(v, 9);
 			VERIFY((v == eastl::vector<int> {1, 3, 4, 6, 7, 8}));
+			VERIFY(numErased == 1);
 		}
 
 		{
 			eastl::vector<int> v = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-			eastl::erase_if(v, [](auto i) { return i % 2 == 0; });
+			auto numErased = eastl::erase_if(v, [](auto i) { return i % 2 == 0; });
 			VERIFY((v == eastl::vector<int>{1, 3, 5, 7, 9}));
+			VERIFY(numErased == 4);
 		}
 	}
 

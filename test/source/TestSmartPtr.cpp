@@ -8,6 +8,7 @@
 #include "GetTypeName.h"
 #include <EAStdC/EAString.h>
 #include <EAStdC/EAStopwatch.h>
+#include <EASTL/atomic.h>
 #include <EASTL/core_allocator_adapter.h>
 #include <EASTL/core_allocator.h>
 #include <EASTL/intrusive_ptr.h>
@@ -800,6 +801,38 @@ static int Test_unique_ptr()
 			}
 		#endif
 
+		#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+			{
+				unique_ptr<int> pT1(new int(5));
+				unique_ptr<int> pT2(new int(10));
+				unique_ptr<int> pT3(new int(0));
+
+				EATEST_VERIFY((pT1 <=> pT2) != 0);
+				EATEST_VERIFY((pT2 <=> pT1) != 0);
+
+				EATEST_VERIFY((pT1 <=> pT2) < 0);
+				EATEST_VERIFY((pT1 <=> pT2) <= 0);
+				EATEST_VERIFY((pT2 <=> pT1) > 0);
+				EATEST_VERIFY((pT2 <=> pT1) >= 0);
+
+				EATEST_VERIFY((pT3 <=> pT1) < 0);
+				EATEST_VERIFY((pT3 <=> pT2) < 0);
+				EATEST_VERIFY((pT1 <=> pT3) > 0);
+				EATEST_VERIFY((pT2 <=> pT3) > 0);
+
+				unique_ptr<A> pT4(new A(5));
+				unique_ptr<A> pT5(new A(10));
+
+				EATEST_VERIFY((pT4 <=> pT5) != 0);
+				EATEST_VERIFY((pT5 <=> pT4) != 0);
+
+				EATEST_VERIFY((pT4 <=> pT5) < 0);
+				EATEST_VERIFY((pT4 <=> pT5) <= 0);
+				EATEST_VERIFY((pT5 <=> pT4) > 0);
+				EATEST_VERIFY((pT5 <=> pT4) >= 0);
+			}
+		#endif
+
 			// ToDo: Test move assignment between two convertible types with an is_assignable deleter_type
 			//{
 			//	struct Base {};
@@ -1351,7 +1384,7 @@ static int Test_shared_ptr()
 	{
 		EA::Thread::ThreadParameters    mThreadParams;
 		EA::Thread::Thread              mThread;
-		volatile bool                   mbShouldContinue;
+		eastl::atomic<bool>             mbShouldContinue;
 		int                             mnErrorCount;
 		eastl::shared_ptr<TestObject>*  mpSPTO;
 		eastl::weak_ptr<TestObject>*    mpWPTO;
@@ -1364,7 +1397,7 @@ static int Test_shared_ptr()
 		{
 			int& nErrorCount = mnErrorCount; // declare nErrorCount so that EATEST_VERIFY can work, as it depends on it being declared.
 
-			while(mbShouldContinue)
+			while(mbShouldContinue.load(eastl::memory_order_relaxed))
 			{
 				EA::UnitTest::ThreadSleepRandom(1, 10);
 
@@ -1419,7 +1452,7 @@ static int Test_shared_ptr_thread()
 			EA::UnitTest::ThreadSleep(2000);
 
 			for(size_t i = 0; i < EAArrayCount(thread); i++)
-				thread[i].mbShouldContinue = false;
+				thread[i].mbShouldContinue.store(false, eastl::memory_order_relaxed);
 
 			for(size_t i = 0; i < EAArrayCount(thread); i++)
 			{

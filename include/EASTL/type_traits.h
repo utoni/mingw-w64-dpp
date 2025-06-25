@@ -93,6 +93,8 @@
 //    is_abstract                           T is an abstract class.
 //    is_signed                             T is a signed integral type.
 //    is_unsigned                           T is an unsigned integral type.
+//    is_bounded_array                      T is a type is an array type of known bound
+//    is_unbounded_array                    T is a type is an array type of unknown bound
 //
 //    is_constructible
 //    is_trivially_constructible
@@ -131,6 +133,7 @@
 //    remove_cv
 //    remove_const                          The member typedef type shall be the same as T except that any top level const-qualifier has been removed. remove_const<const volatile int>::type evaluates to volatile int, whereas remove_const<const int*> is const int*.
 //    remove_volatile
+//    remove_cvref
 //    add_cv
 //    add_const
 //    add_volatile
@@ -177,6 +180,12 @@
 //    is_nothrow_swappable                  "
 //    is_reference_wrapper                  Found in <EASTL/functional.h>
 //    remove_reference_wrapper              "
+//    is_detected                           Checks if some supplied arguments (Args) respect a constraint (Op).
+//    detected_t                            Check which type we obtain after expanding some arguments (Args) over a constraint (Op).
+//    detected_or                           Checks if some supplied arguments (Args) respect a constraint (Op) and allow to overwrite return type.
+//    detected_or_t                         Equivalent to detected_or<Default, Op, Args...>::type.
+//    is_detected_exact                     Check that the type we obtain after expanding some arguments (Args) over a constraint (Op) is equivalent to Expected.
+//    is_detected_convertible               Check that the type we obtain after expanding some arguments (Args) over a constraint (Op) is convertible to Expected.
 //
 // Deprecated pre-C++11 type traits
 //    has_trivial_constructor               The default constructor for T is trivial.
@@ -621,12 +630,8 @@ namespace eastl
 
 	#define EASTL_TYPE_TRAIT_is_const_CONFORMANCE 1    // is_const is conforming.
 
-	template <typename T> struct is_const_value                    : public eastl::false_type{};
-	template <typename T> struct is_const_value<const T*>          : public eastl::true_type{};
-	template <typename T> struct is_const_value<const volatile T*> : public eastl::true_type{};
-
-	template <typename T> struct is_const : public eastl::is_const_value<T*>{};
-	template <typename T> struct is_const<T&> : public eastl::false_type{}; // Note here that T is const, not the reference to T. So is_const is false. See section 8.3.2p1 of the C++ standard.
+	template <typename T> struct is_const : public eastl::false_type {};
+	template <typename T> struct is_const<const T> : public eastl::true_type {};
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
 		template <class T>
@@ -643,12 +648,8 @@ namespace eastl
 
 	#define EASTL_TYPE_TRAIT_is_volatile_CONFORMANCE 1    // is_volatile is conforming.
 
-	template <typename T> struct is_volatile_value                    : public eastl::false_type{};
-	template <typename T> struct is_volatile_value<volatile T*>       : public eastl::true_type{};
-	template <typename T> struct is_volatile_value<const volatile T*> : public eastl::true_type{};
-
-	template <typename T> struct is_volatile : public eastl::is_volatile_value<T*>{};
-	template <typename T> struct is_volatile<T&> : public eastl::false_type{}; // Note here that T is volatile, not the reference to T. So is_const is false. See section 8.3.2p1 of the C++ standard.
+	template <typename T> struct is_volatile : public eastl::false_type {};
+	template <typename T> struct is_volatile<volatile T> : public eastl::true_type {};
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
 		template <class T>
@@ -686,39 +687,21 @@ namespace eastl
 
 	#define EASTL_TYPE_TRAIT_is_function_CONFORMANCE 1    // is_function is conforming.
 
-	template <typename>
+	// afaik, original credit is to Walter Brown who described this implementation at CppCon 2019.
+	// libc++, libstdc++ and MS STL all use similar implementations.
+	// This relies on the fact that only function and reference types can't be const qualified.
+	// Rather than listing an obscene number of specializations for const, volatile, l- and r-value reference,
+	// noexcept and all relevant combinations we take advantage of this fact.
+#ifdef _MSC_VER
+	#pragma warning(push)
+	#pragma warning(disable: 4180)  // qualifier applied to function type has no meaning; ignored
+#endif
+	template <typename T>
 	struct is_function
-		: public eastl::false_type {};
-
-	#if EA_PLATFORM_PTR_SIZE == 4 && defined(EA_PLATFORM_MICROSOFT) && defined(_MSC_EXTENSIONS)
-		// __cdecl specialization
-		template <typename ReturnValue, typename... ArgPack>
-		struct is_function<ReturnValue __cdecl (ArgPack...)>
-			: public eastl::true_type {};
-
-		template <typename ReturnValue, typename... ArgPack>
-		struct is_function<ReturnValue __cdecl (ArgPack..., ...)>    // The second ellipsis handles the case of a function that takes ellipsis, like printf.
-			: public eastl::true_type {};
-
-		// __stdcall specialization
-		template <typename ReturnValue, typename... ArgPack>
-		struct is_function<ReturnValue __stdcall (ArgPack...)>
-			: public eastl::true_type {};
-
-		// When functions use a variable number of arguments, it is the caller that cleans the stack (cf. cdecl).
-		//
-		// template <typename ReturnValue, typename... ArgPack>
-		// struct is_function<ReturnValue __stdcall (ArgPack..., ...)>    // The second ellipsis handles the case of a function that takes ellipsis, like printf.
-		//     : public eastl::true_type {};
-	#else
-		template <typename ReturnValue, typename... ArgPack>
-		struct is_function<ReturnValue (ArgPack...)>
-			: public eastl::true_type {};
-
-		template <typename ReturnValue, typename... ArgPack>
-		struct is_function<ReturnValue (ArgPack..., ...)>    // The second ellipsis handles the case of a function that takes ellipsis, like printf.
-			: public eastl::true_type {};
-	#endif
+		: public eastl::bool_constant<!eastl::is_reference<T>::value && !eastl::is_const<const T>::value>::type {};
+#ifdef _MSC_VER
+	#pragma warning(pop)
+#endif
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
 		template<typename T>
@@ -900,12 +883,16 @@ namespace eastl
 
 	#define EASTL_TYPE_TRAIT_add_lvalue_reference_CONFORMANCE 1    // add_lvalue_reference is conforming.
 
-	template <typename T> struct add_lvalue_reference                      { typedef T& type;                  };   // If T is an && type then T&& & will be equivalent to T&.
-	template <typename T> struct add_lvalue_reference<T&>                  { typedef T& type;                  };   // This shouldn't be required for modern compilers, as they recognize that a reference to a reference is still a reference.
-	template <>           struct add_lvalue_reference<void>                { typedef void type;                };
-	template <>           struct add_lvalue_reference<const void>          { typedef const void type;          };
-	template <>           struct add_lvalue_reference<volatile void>       { typedef volatile void type;       };
-	template <>           struct add_lvalue_reference<const volatile void> { typedef const volatile void type; };
+	namespace internal
+	{
+		template <typename T>
+		auto try_add_lvalue_reference(int)->type_identity<T&>;
+
+		template <typename T>
+		auto try_add_lvalue_reference(...)->type_identity<T>;
+	}
+
+	template <typename T> struct add_lvalue_reference : decltype(internal::try_add_lvalue_reference<T>(0)) {};
 
 	#if defined(EA_COMPILER_NO_TEMPLATE_ALIASES)
 		// To do: define macro.
@@ -935,12 +922,16 @@ namespace eastl
 
 	#define EASTL_TYPE_TRAIT_add_rvalue_reference_CONFORMANCE 1
 
-	template <typename T> struct add_rvalue_reference                      { typedef T&& type;                 }; // Dinkumware has this as { typedef typename eastl::remove_reference<T>::type&& type; }, but that doesn't seem right to me.
-	template <typename T> struct add_rvalue_reference<T&>                  { typedef T& type;                  }; // The Standard section 20.7.9.2 specifies that we do this, though it seems like the compiler ought to not require this, as C++11 stipulates that & + && -> &.
-	template <>           struct add_rvalue_reference<void>                { typedef void type;                };
-	template <>           struct add_rvalue_reference<const void>          { typedef const void type;          };
-	template <>           struct add_rvalue_reference<volatile void>       { typedef volatile void type;       };
-	template <>           struct add_rvalue_reference<const volatile void> { typedef const volatile void type; };
+	namespace internal
+	{
+		template <typename T>
+		auto try_add_rvalue_reference(int)->type_identity<T&&>;
+
+		template <typename T>
+		auto try_add_rvalue_reference(...)->type_identity<T>;
+	}
+
+	template <typename T> struct add_rvalue_reference : decltype(internal::try_add_rvalue_reference<T>(0)) {};
 
 	#if defined(EA_COMPILER_NO_TEMPLATE_ALIASES)
 		// To do: define macro.
@@ -1040,9 +1031,11 @@ namespace eastl
 // The following files implement the type traits themselves.
 #include <EASTL/internal/type_fundamental.h>
 #include <EASTL/internal/type_transformations.h>
+#include <EASTL/internal/type_void_t.h>
 #include <EASTL/internal/type_properties.h>
 #include <EASTL/internal/type_compound.h>
 #include <EASTL/internal/type_pod.h>
+#include <EASTL/internal/type_detected.h>
 
 
 #endif // Header include guard
