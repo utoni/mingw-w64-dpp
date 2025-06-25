@@ -7,6 +7,7 @@
 #include <EASTL/string.h>
 #include <EASTL/algorithm.h>
 #include <EASTL/sort.h>
+#include <EASTL/bonus/overloaded.h>
 
 #ifdef EA_COMPILER_CPP14_ENABLED
 #include "ConceptImpls.h"
@@ -291,7 +292,7 @@ int TestVariantHoldsAlternative()
 
 			VERIFY(!holds_alternative<long>(v));   // Verify that a query for a T not in the variant typelist returns false.
 			VERIFY(!holds_alternative<string>(v)); // Verify that a query for a T not in the variant typelist returns false.
-			VERIFY(!holds_alternative<int>(v));    // variant does not hold an int 
+			VERIFY(!holds_alternative<int>(v));    // variant does not hold an int
 			VERIFY(!holds_alternative<short>(v));  // variant does not hold a short
 		}
 
@@ -377,7 +378,7 @@ int TestVariantValuelessByException()
 			VERIFY(!v.valueless_by_exception());
 		}
 
-		// TODO(rparolin):  review exception safety for variant types 
+		// TODO(rparolin):  review exception safety for variant types
 		//
 		// {
 		// #if EASTL_EXCEPTIONS_ENABLED
@@ -563,12 +564,12 @@ int TestVariantSwap()
 
 		v1.swap(v2);
 
-		VERIFY(get<int>(v1) == 24); 
+		VERIFY(get<int>(v1) == 24);
 		VERIFY(get<int>(v2) == 42);
 
 		v1.swap(v2);
 
-		VERIFY(get<int>(v1) == 42); 
+		VERIFY(get<int>(v1) == 42);
 		VERIFY(get<int>(v2) == 24);
 	}
 
@@ -576,13 +577,13 @@ int TestVariantSwap()
 		 variant<string> v1 = "Hello";
 		 variant<string> v2 = "World";
 
-		 VERIFY(get<string>(v1) == "Hello"); 
+		 VERIFY(get<string>(v1) == "Hello");
 		 VERIFY(get<string>(v2) == "World");
 
 		 v1.swap(v2);
 
 		 VERIFY(get<string>(v1) == "World");
-		 VERIFY(get<string>(v2) == "Hello"); 
+		 VERIFY(get<string>(v2) == "Hello");
 	}
 
 	return nErrorCount;
@@ -657,7 +658,7 @@ EA_NO_INLINE int TestVariantVisitNoInline(const eastl::variant<int, bool, unsign
 	struct MyVisitor
 	{
 		MyVisitor() = delete;
-		MyVisitor(bool& b) : mVisited(b) {}
+		MyVisitor(bool& visited) : mVisited(visited) {};
 
 		void operator()(int) { mVisited = true; }
 		void operator()(bool) { mVisited = true; }
@@ -666,7 +667,7 @@ EA_NO_INLINE int TestVariantVisitNoInline(const eastl::variant<int, bool, unsign
 		bool& mVisited;
 	};
 
-	eastl::visit(MyVisitor{bVisited}, v);
+	eastl::visit(MyVisitor(bVisited), v);
 
 	EATEST_VERIFY(bVisited);
 
@@ -682,7 +683,7 @@ EA_NO_INLINE int TestVariantVisit2NoInline(const eastl::variant<int, bool>& v0, 
 	struct MyVisitor
 	{
 		MyVisitor() = delete;
-		MyVisitor(bool& b) : mVisited(b) {}
+		MyVisitor(bool& visited) : mVisited(visited) {};
 
 		void operator()(int, int) { mVisited = true; }
 		void operator()(bool, int) { mVisited = true; }
@@ -692,7 +693,7 @@ EA_NO_INLINE int TestVariantVisit2NoInline(const eastl::variant<int, bool>& v0, 
 		bool& mVisited;
 	};
 
-	eastl::visit(MyVisitor{bVisited}, v0, v1);
+	eastl::visit(MyVisitor(bVisited), v0, v1);
 
 	EATEST_VERIFY(bVisited);
 
@@ -708,7 +709,7 @@ EA_NO_INLINE int TestVariantVisit3tNoInline(const eastl::variant<int, bool>& v0,
 	struct MyVisitor
 	{
 		MyVisitor() = delete;
-		MyVisitor(bool& b) : mVisited(b) {}
+		MyVisitor(bool& visited) : mVisited(visited) {};
 
 		void operator()(int, int, int) { mVisited = true; }
 		void operator()(bool, int, int) { mVisited = true; }
@@ -723,9 +724,91 @@ EA_NO_INLINE int TestVariantVisit3tNoInline(const eastl::variant<int, bool>& v0,
 		bool& mVisited;
 	};
 
-	eastl::visit(MyVisitor{bVisited}, v0, v1, v2);
+	eastl::visit(MyVisitor(bVisited), v0, v1, v2);
 
 	EATEST_VERIFY(bVisited);
+
+	return nErrorCount;
+}
+
+int TestVariantVisitorOverloaded()
+{
+	using namespace eastl;
+	int nErrorCount = 0;
+
+	using v_t = variant<int, string, double, long>;
+	v_t arr[] = {42, "jean", 42.0, 42L};
+	v_t v{42.0};
+
+
+	#ifdef __cpp_deduction_guides
+	{
+		int count = 0;
+
+		for (auto& e : arr)
+		{
+			eastl::visit(
+				overloaded{
+					[&](int)    { count++; },
+					[&](string) { count++; },
+					[&](double) { count++; },
+			   		[&](long)   { count++; }},
+				e
+			);
+		}
+
+		VERIFY(count == EAArrayCount(arr));
+	}
+
+	{
+		double visitedValue = 0.0f;
+
+		eastl::visit(
+			overloaded{
+				[](int)    { },
+				[](string) { },
+				[&](double d) { visitedValue = d; },
+				[](long)   { }},
+			v
+		);
+
+		VERIFY(visitedValue == 42.0f);
+	}
+
+	#endif
+
+	{
+		int count = 0;
+
+		for (auto& e : arr)
+		{
+			eastl::visit(
+				eastl::make_overloaded(
+					[&](int)    { count++; },
+					[&](string) { count++; },
+					[&](double) { count++; },
+					[&](long)   { count++; }),
+				e
+			);
+		}
+
+		VERIFY(count == EAArrayCount(arr));
+	}
+
+	{
+		double visitedValue = 0.0f;
+
+		eastl::visit(
+			eastl::make_overloaded(
+				[](int)    { },
+				[](string) { },
+				[&](double d) { visitedValue = d; },
+				[](long)   { }),
+			v
+		);
+
+		VERIFY(visitedValue == 42.0f);
+	}
 
 	return nErrorCount;
 }
@@ -736,25 +819,6 @@ int TestVariantVisitor()
 	int nErrorCount = 0;
 
 	using v_t = variant<int, string, double, long>;
-
-	// TODO(rparolin):  When we have a C++17 compiler
-	//
-	// template deduction guides test
-	// template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-	// template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
-	// {
-	//     v_t arr[] = {42, "rob", 42.0, 42L};
-
-	//     int count = 0;
-	//     for (auto& e : arr)
-	//     {
-	//         eastl::visit(overloaded{[&](int)    { count++; },
-	//                                 [&](string) { count++; },
-	//                                 [&](double) { count++; },
-	//                                 [&](long)   { count++; }}, e);
-	//     }
-	// }
 
 	{
 		v_t arr[] = {42, "hello", 42.0, 42L};
@@ -982,7 +1046,7 @@ int TestVariantVisitor()
 		struct MultipleVisitor
 		{
 			MultipleVisitor() = delete;
-			MultipleVisitor(bool& b) : mVisited(b) {}
+			MultipleVisitor(bool& visited) : mVisited(visited) {};
 
 			void operator()(int, int) { mVisited = true; }
 			void operator()(int, bool) {}
@@ -992,11 +1056,11 @@ int TestVariantVisitor()
 			bool& mVisited;
 		};
 
-		visit(MultipleVisitor{bVisited}, v0, v1);
+		visit(MultipleVisitor(bVisited), v0, v1);
 		EATEST_VERIFY(bVisited);
 
 		bVisited = false;
-		visit<void>(MultipleVisitor{bVisited}, v0, v1);
+		visit<void>(MultipleVisitor(bVisited), v0, v1);
 		EATEST_VERIFY(bVisited);
 	}
 
@@ -1742,6 +1806,7 @@ int TestVariant()
 	nErrorCount += TestVariantEmplace();
 	nErrorCount += TestVariantRelOps();
 	nErrorCount += TestVariantInplaceCtors();
+	nErrorCount += TestVariantVisitorOverloaded();
 	nErrorCount += TestVariantVisitor();
 	nErrorCount += TestVariantAssignment();
 	nErrorCount += TestVariantMoveOnly();
@@ -1756,13 +1821,3 @@ int TestVariant()
 #else
 	int TestVariant() { return 0; }
 #endif
-
-
-
-
-
-
-
-
-
-
