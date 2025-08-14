@@ -57,7 +57,7 @@ public:
     Thread(const Thread &) = delete;
     ~Thread(void);
     NTSTATUS Start(ThreadRoutine routine, eastl::shared_ptr<ThreadArgs> args);
-    NTSTATUS WaitForTermination(LONGLONG timeout = 0);
+    NTSTATUS WaitForTermination(LONGLONG timeout = -1);
     HANDLE GetThreadId(void)
     {
         return m_threadId;
@@ -94,7 +94,7 @@ class Semaphore
 {
 public:
     Semaphore(LONG initialValue = 0, LONG maxValue = MAXLONG);
-    NTSTATUS Wait(LONGLONG timeout = 0);
+    NTSTATUS Wait(LONGLONG timeout = -1);
     LONG Release(LONG adjustment = 1);
 
 private:
@@ -105,7 +105,7 @@ class Event
 {
 public:
     Event();
-    NTSTATUS Wait(LONGLONG timeout = 0);
+    NTSTATUS Wait(LONGLONG timeout = -1);
     NTSTATUS Notify();
 
 private:

@@ -56,6 +56,7 @@ NTSTATUS DriverThread::Thread::Start(ThreadRoutine routine, eastl::shared_ptr<Th
 
     if (!NT_SUCCESS(status))
     {
+        threadHandle = nullptr;
         return status;
     }
 
@@ -64,6 +65,7 @@ NTSTATUS DriverThread::Thread::Start(ThreadRoutine routine, eastl::shared_ptr<Th
 
     if (!NT_SUCCESS(status))
     {
+        threadHandle = nullptr;
         return status;
     }
 
@@ -85,7 +87,7 @@ NTSTATUS DriverThread::Thread::WaitForTermination(LONGLONG timeout)
 
     LARGE_INTEGER li_timeout = {.QuadPart = timeout};
     NTSTATUS status =
-        KeWaitForSingleObject(m_threadObject, Executive, KernelMode, FALSE, (timeout == 0 ? NULL : &li_timeout));
+        KeWaitForSingleObject(m_threadObject, Executive, KernelMode, FALSE, &li_timeout);
 
     ObDereferenceObject(m_threadObject);
     m_threadObject = nullptr;
@@ -124,7 +126,7 @@ DriverThread::Semaphore::Semaphore(LONG initialValue, LONG maxValue)
 NTSTATUS DriverThread::Semaphore::Wait(LONGLONG timeout)
 {
     LARGE_INTEGER li_timeout = {.QuadPart = timeout};
-    return KeWaitForSingleObject(&m_semaphore, Executive, KernelMode, FALSE, (timeout == 0 ? NULL : &li_timeout));
+    return KeWaitForSingleObject(&m_semaphore, Executive, KernelMode, FALSE, &li_timeout);
 }
 
 LONG DriverThread::Semaphore::Release(LONG adjustment)
@@ -142,7 +144,7 @@ DriverThread::Event::Event()
 NTSTATUS DriverThread::Event::Wait(LONGLONG timeout)
 {
     LARGE_INTEGER li_timeout = {.QuadPart = timeout};
-    return KeWaitForSingleObject(&m_event, Executive, KernelMode, FALSE, (timeout == 0 ? NULL : &li_timeout));
+    return KeWaitForSingleObject(&m_event, Executive, KernelMode, FALSE, &li_timeout);
 }
 
 NTSTATUS DriverThread::Event::Notify()
