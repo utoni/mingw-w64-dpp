@@ -32,7 +32,8 @@ EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/
 	-DEASTL_ASSERT_ENABLED=1 \
 	-DEA_PLATFORM_POSIX=1 \
 	-Wno-unknown-pragmas \
-	-Wno-deprecated-copy
+	-Wno-deprecated-copy \
+	-Wno-tautological-compare
 USER_LDFLAGS := -Wl,--gc-sections
 
 EASTL_BUILDDIR := EASTL-native-build

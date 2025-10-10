@@ -73,7 +73,8 @@ EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/
 	-DEA_COMPILER_NO_EXCEPTIONS=1 \
 	-DEA_COMPILER_MANAGED_CPP=1 \
 	-Wno-unknown-pragmas \
-	-Wno-deprecated-copy
+	-Wno-deprecated-copy \
+	-Wno-tautological-compare
 DRIVER_LDFLAGS := -shared \
 	-Wl,--subsystem,native \
 	-Wl,--image-base,0x140000000 \

@@ -54,9 +54,9 @@ install: all
 	$(call INSTALL_EXEC_SIGN,$(1_TARGET))
 	$(call INSTALL_EXEC_SIGN,$(2_TARGET))
 	$(call INSTALL_EXEC_SIGN,$(3_TARGET))
-	$(INSTALL) $(1_DRIVER_NAME).bat $(DESTDIR)
-	$(INSTALL) $(2_DRIVER_NAME).bat $(DESTDIR)
-	$(INSTALL) $(3_DRIVER_NAME).bat $(DESTDIR)
+	$(CP) $(1_DRIVER_NAME).bat $(DESTDIR)
+	$(CP) $(2_DRIVER_NAME).bat $(DESTDIR)
+	$(CP) $(3_DRIVER_NAME).bat $(DESTDIR)
 else
 $(1_TARGET):
 	$(error Target $(1_TARGET) does not support BUILD_NATIVE)
@@ -68,9 +68,6 @@ $(2_TARGET):
 # C++ driver w/ EASTL
 $(3_TARGET): $(3_OBJECTS)
 	$(call LINK_CPP_USER_TARGET,$(3_OBJECTS),$@)
-
-install: all
-	$(call INSTALL_EXEC,$(3_TARGET))
 endif
 
 $(1_DRIVER_NAME): $(1_TARGET)

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <stdexcept>
 
+#include <eastl_compat.hpp>
 #include <EASTL/functional.h>
 #include <EASTL/hash_map.h>
 #include <EASTL/random.h>
@@ -33,13 +34,13 @@ typedef UNICODE_STRING * PUNICODE_STRING;
 typedef int NTSTATUS;
 #else
 extern "C" NTSTATUS NTAPI ZwQuerySystemInformation(_In_ int SystemInformationClass,
-                                               _Inout_ PVOID SystemInformation,
-                                               _In_ ULONG SystemInformationLength,
-                                               _Out_opt_ PULONG ReturnLength);
+                                                   _Inout_ PVOID SystemInformation,
+                                                   _In_ ULONG SystemInformationLength,
+                                                   _Out_opt_ PULONG ReturnLength);
 extern "C" NTSTATUS NTAPI WrapperZwQuerySystemInformation(_In_ int SystemInformationClass,
-                                                      _Inout_ PVOID SystemInformation,
-                                                      _In_ ULONG SystemInformationLength,
-                                                      _Out_opt_ PULONG ReturnLength);
+                                                          _Inout_ PVOID SystemInformation,
+                                                          _In_ ULONG SystemInformationLength,
+                                                          _Out_opt_ PULONG ReturnLength);
 #endif
 
 struct GeneratorUint32
@@ -140,6 +141,27 @@ void more_stl_test()
     DbgPrint("fill_me size: %zu\n", fill_me.size());
 }
 
+void fmt_test()
+{
+    eastl::string name = "Toni";
+    int count = 5;
+    double temp = 21.37;
+    auto msg1 = ::format("Format: Hello {} ('Toni'), you have {} (5) new messages ({}C (21.37))", name, count, temp);
+
+    char buf1[] = "test1";
+    char const buf2[] = "test2";
+    auto msg2 = ::format("Format: {} ('test1'), {} ('test2')", buf1, buf2);
+
+    void * ptr = (void *)0xDEADC0DEDEADCAFE;
+    float val = 1337.1337;
+    unsigned over = (unsigned)-1;
+    auto msg3 = ::format("Format: {} (0xDEADC0DEDEADCAFE), {} (1337.1337), {} (-1u)", ptr, val, over);
+
+    DbgPrint("%s\n", msg1.c_str());
+    DbgPrint("%s\n", msg2.c_str());
+    DbgPrint("%s\n", msg3.c_str());
+}
+
 #ifndef BUILD_USERMODE
 static void zw_test()
 {
@@ -177,6 +199,7 @@ extern "C"
         zw_test();
         stl_test();
         more_stl_test();
+        fmt_test();
 
         return STATUS_SUCCESS;
     }
