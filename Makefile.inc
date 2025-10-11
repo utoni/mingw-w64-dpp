@@ -158,7 +158,7 @@ define BUILD_CPP_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CXX) $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) $(CXXFLAGS) $(EASTL_CXXFLAGS) $(CUSTOM_CXXFLAGS) -c $(1) -o $(2)
+	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) $(CXXFLAGS) $(EASTL_CXXFLAGS) $(CUSTOM_CXXFLAGS) -c $(1) -o $(2)
 	@echo 'CXX $@'
 endef
 
@@ -197,7 +197,7 @@ define LINK_CPP_KERNEL_TARGET
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Object files missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CXX) \
+	$(Q)$(CXX) -std=c++20 \
 		$(CFLAGS) \
 		$(CXXFLAGS) \
 		$(EASTL_CXXFLAGS) \
@@ -218,7 +218,7 @@ define LINK_CPP_USER_TARGET
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Object files missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CXX) \
+	$(Q)$(CXX) -std=c++20 \
 		$(CFLAGS) \
 		$(CXXFLAGS) \
 		$(EASTL_CXXFLAGS) \
