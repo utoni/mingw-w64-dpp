@@ -26,7 +26,7 @@ jobs:
           test -r EASTL-build/libEASTL.a
       - run: |
           make examples \
-            WERROR=1 JOBS=4 Q= \
+            WERROR=1 JOBS=4 DEBUG= Q= \
             LOCAL_MINGW64_CC=/usr/bin/x86_64-w64-mingw32-gcc \
             LOCAL_MINGW64_CXX=/usr/bin/x86_64-w64-mingw32-g++ \
             LOCAL_MINGW64_RC=/usr/bin/x86_64-w64-mingw32-windres \

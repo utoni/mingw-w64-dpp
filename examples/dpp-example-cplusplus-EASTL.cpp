@@ -217,6 +217,7 @@ extern "C"
 
         stl_test();
         more_stl_test();
+        fmt_test();
 
         return 0;
     }

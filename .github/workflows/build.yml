@@ -50,7 +50,7 @@ jobs:
           make deps
       - name: Build Examples
         run: |
-          make examples
+          make examples WERROR=1 JOBS=4 DEBUG=1 Q=
       - name: Install Examples
         run: |
           make examples-install DESTDIR=$(realpath _install)
@@ -58,7 +58,7 @@ jobs:
           test -r _install/codesign-ca-cert.crt -a -r _install/dpp-example.bat -a -r _install/dpp-example-cplusplus.bat -a -r _install/dpp-example-cplusplus-EASTL.bat -a -r _install/dpp-example.sys -a -r _install/dpp-example-cplusplus.sys -a -r _install/dpp-example-cplusplus-EASTL.sys
       - name: Test
         run: |
-          ./_install/dpp-example-cplusplus-EASTL.run
+          ./examples/dpp-example-cplusplus-EASTL.run
       - name: Package
         run: |
           make package
