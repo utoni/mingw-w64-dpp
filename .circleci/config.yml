@@ -26,7 +26,7 @@ jobs:
           test -r EASTL-build/libEASTL.a
       - run: |
           make examples \
-            WERROR=1 JOBS=4 DEBUG= Q= \
+            WERROR=1 JOBS=4 DEBUG=1 Q= \
             LOCAL_MINGW64_CC=/usr/bin/x86_64-w64-mingw32-gcc \
             LOCAL_MINGW64_CXX=/usr/bin/x86_64-w64-mingw32-g++ \
             LOCAL_MINGW64_RC=/usr/bin/x86_64-w64-mingw32-windres \
@@ -44,7 +44,7 @@ jobs:
                -r _install/dpp-example-cplusplus.sys -a \
                -r _install/dpp-example-cplusplus-EASTL.sys
       - run: |
-          ./examples/dpp-example-cplusplus-EASTL.run
+          env ASAN_OPTIONS=alloc_dealloc_mismatch=0 ./examples/dpp-example-cplusplus-EASTL.run
       - run: |
           wget 'https://github.com/utoni/mingw-w64-build-ng/releases/download/v1.0/mingw-w64-toolchain.tbz2' -O ./mingw-w64-toolchain.tbz2
       - run: |
