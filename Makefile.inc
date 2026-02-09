@@ -54,7 +54,8 @@ CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-fno-stack-protector -mno-stack-arg-probe \
 	-I$(DPP_ROOT)/CRT -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
-	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset
+	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset \
+	-DDPP_KERNEL_DRIVER=1
 
 ifneq ($(WERROR),)
 CFLAGS += -Werror
@@ -62,11 +63,12 @@ endif
 
 #PRINT_LDSCRIPT = -Wl,--verbose
 
-CXXFLAGS := -fno-exceptions -fno-rtti -fuse-cxa-atexit
+CXXFLAGS := -fno-exceptions -fno-rtti -fno-threadsafe-statics -fuse-cxa-atexit
 EASTL_CXXFLAGS := -I$(DPP_ROOT)/EASTL/include -I$(DPP_ROOT)/EASTL/test/packages/EABase/include/Common \
 	-DEASTL_USER_CONFIG_HEADER="<eastl_user_config.hpp>" \
 	-DEASTL_EABASE_DISABLED=1 \
 	-DEASTL_THREAD_SUPPORT_AVAILABLE=0 \
+	-DEASTL_RTTI_ENABLED=0 \
 	-DEASTL_EXCEPTIONS_ENABLED=0 \
 	-DEASTL_ASSERT_ENABLED=0 \
 	-DEASTL_EASTDC_VSNPRINTF=0 \

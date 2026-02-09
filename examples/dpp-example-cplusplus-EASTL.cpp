@@ -1,4 +1,7 @@
-#ifndef BUILD_USERMODE
+#ifndef DPP_USERMODE
+#ifndef DPP_KERNEL_DRIVER
+#error "Building as kernel driver requires build via Makefile"
+#endif
 #include <ntddk.h>
 #endif
 
@@ -19,7 +22,7 @@
 #include <EASTL/unordered_set.h>
 #include <EASTL/vector.h>
 
-#ifdef BUILD_USERMODE
+#ifdef DPP_USERMODE
 #include <cstdio>
 
 #define DbgPrint printf
@@ -105,7 +108,7 @@ void stl_test()
 
 void more_stl_test()
 {
-#ifndef BUILD_USERMODE
+#ifndef DPP_USERMODE
     hash_map<int, string> hm;
 
     hm[0] = "test1";
@@ -162,7 +165,7 @@ void fmt_test()
     DbgPrint("%s\n", msg3.c_str());
 }
 
-#ifndef BUILD_USERMODE
+#ifndef DPP_USERMODE
 static void zw_test()
 {
     NTSTATUS ret;
@@ -185,7 +188,7 @@ static void zw_test()
 
 extern "C"
 {
-#ifndef BUILD_USERMODE
+#ifndef DPP_USERMODE
     DRIVER_INITIALIZE DriverEntry;
     DRIVER_UNLOAD DriverUnload;
 

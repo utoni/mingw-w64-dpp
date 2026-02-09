@@ -8,7 +8,6 @@ OPP_SUFFIX := kopp
 EXE_SUFFIX := sys
 else
 include $(DPP_ROOT)/Makefile.native.inc
-CFLAGS += -DBUILD_USERMODE=1
 ifdef DEBUG
 CFLAGS += -g -fsanitize=address -fsanitize=leak
 endif

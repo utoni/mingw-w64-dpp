@@ -21,7 +21,7 @@ CXX = /usr/bin/c++
 AR = /usr/bin/ar
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing -Wno-c++20-compat \
 	-m64 -fPIC -fvisibility=hidden \
-	-I$(DPP_ROOT)/CRT -DNATIVE=1
+	-I$(DPP_ROOT)/CRT -DDPP_USERMODE=1
 ifneq ($(WERROR),)
 CFLAGS += -Werror
 endif
