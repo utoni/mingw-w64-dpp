@@ -54,8 +54,7 @@ CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-fno-stack-protector -mno-stack-arg-probe \
 	-I$(DPP_ROOT)/CRT -I$(DDK_INCLUDE_DIR) \
 	-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet \
-	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset \
-	-DDPP_KERNEL_DRIVER=1
+	-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset
 
 ifneq ($(WERROR),)
 CFLAGS += -Werror
