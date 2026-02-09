@@ -22,7 +22,7 @@ eastl::string to_string_hex(unsigned int value, size_t fill_width = 0);
 eastl::string to_string_hex(unsigned long int value, size_t fill_width = 0);
 eastl::string to_string_hex(unsigned long long int value, size_t fill_width = 0);
 
-#ifdef DPP_KERNEL_DRIVER
+#ifndef NATIVE
 eastl::string from_unicode(wchar_t * wstr, unsigned short wlen, unsigned short wmax = 0);
 #endif
 
