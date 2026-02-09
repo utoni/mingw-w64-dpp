@@ -10,7 +10,7 @@
 #define NANOPRINTF_IMPLEMENTATION 1
 #include "nanoprintf.h"
 
-#ifndef NATIVE
+#ifdef DPP_KERNEL_DRIVER
 #include <wdm.h>
 #endif
 
@@ -167,7 +167,7 @@ eastl::string to_string_hex(unsigned long long int value, size_t fill_width)
     return to_string_hex<unsigned long long int>(value, fill_width);
 }
 
-#ifndef NATIVE
+#ifdef DPP_KERNEL_DRIVER
 eastl::string from_unicode(wchar_t * wstr, unsigned short wlen, unsigned short wmax)
 {
     ANSI_STRING ansi;
