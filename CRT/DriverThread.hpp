@@ -8,6 +8,7 @@
 #include <EASTL/shared_ptr.h>
 
 extern "C" void InterceptorThreadRoutine(PVOID threadContext);
+extern "C" void DpcTimerInterceptor(PKDPC Dpc, PVOID Context, PVOID Arg1, PVOID Arg2);
 
 namespace DriverThread
 {
@@ -57,7 +58,8 @@ public:
     Thread(const Thread &) = delete;
     ~Thread(void);
     NTSTATUS Start(ThreadRoutine routine, eastl::shared_ptr<ThreadArgs> args);
-    NTSTATUS WaitForTermination(LONGLONG timeout = -1);
+    NTSTATUS WaitForTermination(LONGLONG timeout = 0);
+    NTSTATUS WaitForTerminationIndefinitely();
     HANDLE GetThreadId(void)
     {
         return m_threadId;
@@ -160,6 +162,24 @@ private:
     WorkerRoutine m_workerRoutine;
 
     static NTSTATUS WorkerInterceptorRoutine(eastl::shared_ptr<ThreadArgs> args);
+};
+
+using DpcRoutine = eastl::function<void(void)>;
+
+class DpcTimer
+{
+public:
+    DpcTimer();
+    ~DpcTimer(void);
+    bool Start(const DpcRoutine & routine, LONGLONG timeout = -100000 /* 10 ms */,
+               bool periodic = false);
+    bool StopAndWait();
+private:
+    friend void ::DpcTimerInterceptor(PKDPC Dpc, PVOID Context, PVOID Arg1, PVOID Arg2);
+
+    KTIMER m_Timer;
+    KDPC m_TimerDpc;
+    DpcRoutine m_Callback;
 };
 
 }; // namespace DriverThread

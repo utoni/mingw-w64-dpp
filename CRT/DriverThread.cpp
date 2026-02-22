@@ -24,7 +24,7 @@ DriverThread::Thread::Thread(void)
 
 DriverThread::Thread::~Thread(void)
 {
-    WaitForTermination();
+    WaitForTerminationIndefinitely();
 }
 
 extern "C" void InterceptorThreadRoutine(PVOID threadContext)
@@ -32,10 +32,19 @@ extern "C" void InterceptorThreadRoutine(PVOID threadContext)
     NTSTATUS threadReturn;
     DriverThread::Thread * self = (DriverThread::Thread *)threadContext;
 
-    self->m_threadId = PsGetCurrentThreadId();
+    if (!self)
+        return;
+
+    {
+        DriverThread::LockGuard lock(self->m_mutex);
+        self->m_threadId = PsGetCurrentThreadId();
+    }
     threadReturn = self->m_routine(self->m_threadContext);
-    self->m_threadId = nullptr;
-    self->m_threadContext = nullptr;
+    {
+        DriverThread::LockGuard lock(self->m_mutex);
+        self->m_threadId = nullptr;
+        self->m_threadContext = nullptr;
+    }
     PsTerminateSystemThread(threadReturn);
 }
 
@@ -61,7 +70,8 @@ NTSTATUS DriverThread::Thread::Start(ThreadRoutine routine, eastl::shared_ptr<Th
     }
 
     status =
-        ObReferenceObjectByHandle(threadHandle, THREAD_ALL_ACCESS, NULL, KernelMode, (PVOID *)&m_threadObject, NULL);
+        ObReferenceObjectByHandle(threadHandle, GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE,
+                                  *PsThreadType, KernelMode, (PVOID *)&m_threadObject, NULL);
 
     if (!NT_SUCCESS(status))
     {
@@ -74,23 +84,50 @@ NTSTATUS DriverThread::Thread::Start(ThreadRoutine routine, eastl::shared_ptr<Th
 
 NTSTATUS DriverThread::Thread::WaitForTermination(LONGLONG timeout)
 {
-    if (PsGetCurrentThreadId() == m_threadId)
-    {
-        return STATUS_UNSUCCESSFUL;
-    }
+    PETHREAD localThreadObject = nullptr;
 
-    LockGuard lock(m_mutex);
-    if (m_threadObject == nullptr)
     {
-        return STATUS_UNSUCCESSFUL;
+        LockGuard lock(m_mutex);
+        if (PsGetCurrentThreadId() == m_threadId)
+        {
+            return STATUS_UNSUCCESSFUL;
+        }
+        if (m_threadObject == nullptr)
+        {
+            return STATUS_UNSUCCESSFUL;
+        }
+        localThreadObject = m_threadObject;
+        m_threadObject = nullptr;
     }
 
     LARGE_INTEGER li_timeout = {.QuadPart = timeout};
     NTSTATUS status =
-        KeWaitForSingleObject(m_threadObject, Executive, KernelMode, FALSE, &li_timeout);
+        KeWaitForSingleObject(localThreadObject, Executive, KernelMode, FALSE, &li_timeout);
+    ObDereferenceObject(localThreadObject);
+    return status;
+}
 
-    ObDereferenceObject(m_threadObject);
-    m_threadObject = nullptr;
+NTSTATUS DriverThread::Thread::WaitForTerminationIndefinitely()
+{
+    PETHREAD localThreadObject = nullptr;
+
+    {
+        LockGuard lock(m_mutex);
+        if (PsGetCurrentThreadId() == m_threadId)
+        {
+            return STATUS_UNSUCCESSFUL;
+        }
+        if (m_threadObject == nullptr)
+        {
+            return STATUS_UNSUCCESSFUL;
+        }
+        localThreadObject = m_threadObject;
+        m_threadObject = nullptr;
+    }
+
+    NTSTATUS status =
+        KeWaitForSingleObject(localThreadObject, Executive, KernelMode, FALSE, NULL);
+    ObDereferenceObject(localThreadObject);
     return status;
 }
 
@@ -226,7 +263,7 @@ void DriverThread::WorkQueue::Stop(bool wait)
     m_wakeEvent.Notify();
     if (wait)
     {
-        m_worker.WaitForTermination();
+        m_worker.WaitForTerminationIndefinitely();
     }
 }
 
@@ -296,4 +333,42 @@ NTSTATUS DriverThread::WorkQueue::WorkerInterceptorRoutine(eastl::shared_ptr<Thr
     }
 
     return STATUS_SUCCESS;
+}
+
+DriverThread::DpcTimer::DpcTimer(void)
+{
+    KeInitializeTimer(&m_Timer);
+}
+
+DriverThread::DpcTimer::~DpcTimer()
+{
+    StopAndWait();
+}
+
+extern "C" void DpcTimerInterceptor(PKDPC Dpc, PVOID Context, PVOID Arg1, PVOID Arg2)
+{
+    UNREFERENCED_PARAMETER(Dpc);
+    UNREFERENCED_PARAMETER(Arg1);
+    UNREFERENCED_PARAMETER(Arg2);
+
+    auto self = (DriverThread::DpcTimer *)Context;
+    self->m_Callback();
+}
+
+bool DriverThread::DpcTimer::Start(const DpcRoutine & routine, LONGLONG timeout, bool periodic)
+{
+    LARGE_INTEGER expiration;
+    expiration.QuadPart = timeout;
+    m_Callback = routine;
+    KeInitializeDpc(&m_TimerDpc, DpcTimerInterceptor, this);
+    return KeSetTimerEx(&m_Timer, expiration,
+                        (periodic == true ? timeout * (-1LL) / (10000LL) : 0),
+                        &m_TimerDpc);
+}
+
+bool DriverThread::DpcTimer::StopAndWait()
+{
+    auto queued = KeCancelTimer(&m_Timer);
+    KeFlushQueuedDpcs();
+    return queued;
 }

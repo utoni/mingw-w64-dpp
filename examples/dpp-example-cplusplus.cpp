@@ -4,6 +4,8 @@
 #include <eastl_compat.hpp>
 #include <DriverThread.hpp>
 
+static DriverThread::Thread dpc_thread;
+
 class TestSmth
 {
 public:
@@ -206,6 +208,22 @@ static void test_cplusplus(void)
         });
 
     some_static.doSmth();
+
+    dpc_thread.Start([](eastl::shared_ptr<DriverThread::ThreadArgs>)
+    {
+        size_t dpc_calls = 0;
+        DriverThread::DpcTimer timer;
+        auto ret = timer.Start([&dpc_calls]() {
+            dpc_calls++;
+        }, -166666, true);
+        if (ret)
+            DbgPrint("Dpc Timer start failed, already started?\n");
+        LARGE_INTEGER li;
+        li.QuadPart = -166666 * 60 * 3;
+        KeDelayExecutionThread(KernelMode, TRUE, &li);
+        DbgPrint("DPC Timer Routine calls: %zu\n", dpc_calls);
+        return 0;
+    }, nullptr);
 }
 
 extern "C"
@@ -230,6 +248,8 @@ extern "C"
     VOID DriverUnload(PDRIVER_OBJECT DriverObject)
     {
         (void)DriverObject;
+
+        dpc_thread.WaitForTerminationIndefinitely();
 
         delete cdtor_test;
         DbgPrint("%s\n", "Bye ring0!");
