@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: ubuntu:jammy
+      - image: debian:12
     steps:
       - checkout
       - run: export DEBIAN_FRONTEND=noninteractive
@@ -51,6 +51,11 @@ jobs:
           make examples-clean
       - run: |
           make deps-distclean
+
+  build-with-prebuild-toolchain:
+    docker:
+      - image: debian:13
+    steps:
       - run: |
           make deps \
             WERROR=1 JOBS=4 Q= \
