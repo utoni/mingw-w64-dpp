@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Copyright (C) 2022 Kyle Schwarz <zeranoe@gmail.com>, Toni Uhlig <matzeton@googlemail.com>
+# Copyright (C) 2024 Kyle Schwarz <zeranoe@gmail.com>, Toni Uhlig <matzeton@googlemail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,19 +18,19 @@
 
 ROOT_PATH="$HOME/.mingw-w64-build-ng"
 
-MINGW_W64_BRANCH="v9.x"
-BINUTILS_BRANCH="binutils-2_39-branch"
+MINGW_W64_BRANCH="master"
+BINUTILS_BRANCH="binutils-2_42-branch"
 GCC_BRANCH="releases/gcc-12"
 
 USE_TARBALL_RELEASES=1
 
-MINGW_W64_TARBALL_VERSION="v9.0.0"
-BINUTILS_TARBALL_VERSION="2.39"
-GCC_TARBALL_VERSION="12.2.0"
+MINGW_W64_TARBALL_VERSION="v11.0.0"
+BINUTILS_TARBALL_VERSION="2.43"
+GCC_TARBALL_VERSION="12.5.0"
 
-MINGW_W64_TARBALL_SHA512="e5726eff24326dd8997c21e0ea3069fc6b8e2b29ba40648f7c0c8b52980d02b96b13d8c00dfa91b16fcd311d1fb83ec879cf2ce57249b7f5069e4af7b93b872a"
-BINUTILS_TARBALL_SHA512="b446f60e03c88d70e37089240b7ef563da31fbbf5f41a4de4cf576fa33ab1b184714657eac88aa05b5a051524af9fb9ec12a90d0bb33b16d181a4eb4aa388842"
-GCC_TARBALL_SHA512="9259c6d5c144b76f5159e9b33792bf41b9759ea62f9f85da15761660c434cc98a204208856d12cd8123df35db787e417f15dc4803d45cfd7c79247d612ef53c6"
+MINGW_W64_TARBALL_SHA512="5a0a09a572fcf152ed75c6e7830fd62e6c01decc9cbdba5552d4b9c00eebfa79f98e266ba9e403b184eb5a14bd45b24f5a4c16802a40295464e3323b8f2b11bc"
+BINUTILS_TARBALL_SHA512="27a19e23b2e8be9994f13687a6e0d6fd6db58f2013d4fd7b1c7f098069fbbee59e6500de4ea16b2218df5f23861f7925472081c3baec7a98533431c2d522c7b1"
+GCC_TARBALL_SHA512="da5d7d45847372ffe9917c9114e443f5f7d178b15a227fc51bf193bb1c4307891692e572e063e39ca71a318b32d55e335646852b39636014b7504f92524ebca7"
 
 ENABLE_THREADS="--enable-threads=posix"
 
@@ -45,7 +45,8 @@ Usage:
   $0 [options] <arch>...
 
 Archs:
-  i686    Windows 32-bit
+  i586    Windows 32-bit for old CPUs (Intel Pentium (MMX), AMD K5, K6, K6-2, K6-III)
+  i686    Windows 32-bit (Intel P6 [Pentium Pro], AMD K7 and newer)
   x86_64  Windows 64-bit
 
 Options:
@@ -61,6 +62,7 @@ Options:
   --mingw-w64-branch <branch>  NOT RECOMMENDED - set MinGW-w64 branch (default: $MINGW_W64_BRANCH)
   --force-git                  NOT RECOMMENDED - force git clone (default: disabled)
   --linked-runtime <runtime>   set MinGW Linked Runtime (default: $LINKED_RUNTIME)
+  --tarball <path>             generate a toolchain tarball archive (bzip2 compressed)
 EOF
 }
 
@@ -99,7 +101,7 @@ execute()
         printf "(%d/%d): %s\n" "$CURRENT_STEP" "$TOTAL_STEPS" "$info_msg"
         CURRENT_STEP=$((CURRENT_STEP + 1))
     fi
-    $@ >>"$LOG_FILE" 2>&1 || error_exit "$error_msg, check $LOG_FILE for details"
+    "$@" >>"$LOG_FILE" 2>&1 || error_exit "$error_msg, check $LOG_FILE for details"
 }
 
 create_dir()
@@ -207,10 +209,11 @@ build()
         remove_path "$prefix"
     fi
 
-    if [ "$arch" = "i686" ]; then
-        local i686_dwarf2="--disable-sjlj-exceptions --with-dwarf2"
+    if [ "$arch" = "i586" ] || [ "$arch" = "i686" ]; then
+        local x86_dwarf2="--disable-sjlj-exceptions --with-dwarf2"
         local crt_lib="--enable-lib32 --disable-lib64"
     else
+        local x86_dwarf2=""
         local crt_lib="--enable-lib64 --disable-lib32"
     fi
 
@@ -246,7 +249,7 @@ build()
         "$SRC_PATH/gcc/configure" --target="$host" --disable-shared \
             --enable-static --disable-multilib --prefix="$prefix" \
             --enable-languages=c,c++ --disable-nls $ENABLE_THREADS \
-            $i686_dwarf2
+            $x86_dwarf2
 
     execute "($arch): building GCC (all-gcc)" "" \
         make -j $JOB_COUNT all-gcc
@@ -321,14 +324,14 @@ while :; do
             ;;
         -r|--root)
             if [ "$2" ]; then
-                ROOT_PATH=$(realpath "$2")
+                ROOT_PATH_ARG="$2"
                 shift
             else
                 arg_error "'--root' requires a non-empty option argument"
             fi
             ;;
         --root=?*)
-            ROOT_PATH=$(realpath "${1#*=}")
+            ROOT_PATH_ARG="${1#*=}"
             ;;
         --root=)
             arg_error "'--root' requires a non-empty option argument"
@@ -407,6 +410,17 @@ while :; do
         --force-git)
             USE_TARBALL_RELEASES=0
             ;;
+        --tarball)
+            if [ "$2" ]; then
+                TARBALL=$(realpath "$2")
+                shift
+            else
+                arg_error "'--tarball' requires a non-empty option argument"
+            fi
+            ;;
+        i586)
+            BUILD_I586=1
+            ;;
         i686)
             BUILD_I686=1
             ;;
@@ -430,13 +444,8 @@ while :; do
     shift
 done
 
-SRC_PATH="$ROOT_PATH/src"
-BLD_PATH="$ROOT_PATH/bld"
-LOG_FILE="$ROOT_PATH/build.log"
-I686_PREFIX="$ROOT_PATH/i686"
-X86_64_PREFIX="$ROOT_PATH/x86_64"
-
-if [ ! "$BUILD_I686" ] && [ ! "$BUILD_X86_64" ]; then
+NUM_BUILDS=$((BUILD_I586 + BUILD_I686 + BUILD_X86_64))
+if [ "$NUM_BUILDS" -eq 0 ]; then
     arg_error "no ARCH was specified"
 fi
 
@@ -450,7 +459,7 @@ if [ "$MISSING_EXECS" ]; then
     error_exit "missing required executable(s):$MISSING_EXECS"
 fi
 
-TOTAL_STEPS=1
+TOTAL_STEPS=0
 
 if [ "${USE_TARBALL_RELEASES}" -ne 0 ]; then
     TOTAL_STEPS=$((TOTAL_STEPS + 6))
@@ -470,18 +479,31 @@ else
     THREADS_STEPS=0
 fi
 
-if [ "$BUILD_I686" ] && [ "$BUILD_X86_64" ]; then
-    THREADS_STEPS=$((THREADS_STEPS * 2))
-    BUILD_STEPS=26
-else
-    BUILD_STEPS=13
+THREADS_STEPS=$((THREADS_STEPS * NUM_BUILDS))
+BUILD_STEPS=$((13 * NUM_BUILDS))
+
+if [ ! -z "${TARBALL}" ]; then
+    TOTAL_STEPS=$((TOTAL_STEPS + 1))
 fi
 
 TOTAL_STEPS=$((TOTAL_STEPS + THREADS_STEPS + BUILD_STEPS))
 
+if [ "$ROOT_PATH_ARG" ]; then
+    ROOT_PATH=$(mkdir -p "$ROOT_PATH_ARG" && cd "$ROOT_PATH_ARG" && pwd)
+fi
+
+SRC_PATH="$ROOT_PATH/src"
+BLD_PATH="$ROOT_PATH/bld"
+LOG_FILE="$ROOT_PATH/build.log"
+
 if [ "$PREFIX" ]; then
+    I586_PREFIX="$PREFIX"
     I686_PREFIX="$PREFIX"
     X86_64_PREFIX="$PREFIX"
+else
+    I586_PREFIX="$ROOT_PATH/i586"
+    I686_PREFIX="$ROOT_PATH/i686"
+    X86_64_PREFIX="$ROOT_PATH/x86_64"
 fi
 
 CURRENT_STEP=1
@@ -491,35 +513,45 @@ mkdir -p "$ROOT_PATH"
 rm -f "$LOG_FILE"
 touch "$LOG_FILE"
 
+
 if [ ! "$CACHED_SOURCES" ]; then
     download_sources
+else
+    if [ ! -f "$SRC_PATH/gcc/config.guess" ]; then
+        arg_error "no sources found, run with --keep-artifacts first"
+    fi
 fi
 
 change_dir "$SRC_PATH/gcc"
+BUILD=$(sh "./config.guess")
 
 execute "" "failed to download GCC dependencies" \
     ./contrib/download_prerequisites
+
+for i in mpc isl mpfr gmp; do
+    ln -s "$SRC_PATH/gcc/$i" "$SRC_PATH/binutils/$i"
+done
 
 export CFLAGS="-g0"
 export CXXFLAGS="-g0"
 export LDFLAGS="-s"
 
-COMPLETE_MSG="complete, to use MinGW-w64 everywhere add"
+ADD_TO_PATH=()
+
+if [ "$BUILD_I586" ]; then
+    build i586 "$I586_PREFIX"
+    ADD_TO_PATH+=("'$I586_PREFIX/bin'")
+fi
 
 if [ "$BUILD_I686" ]; then
     build i686 "$I686_PREFIX"
-    COMPLETE_MSG="$COMPLETE_MSG '$I686_PREFIX/bin'"
+    ADD_TO_PATH+=("'$I686_PREFIX/bin'")
 fi
 
 if [ "$BUILD_X86_64" ]; then
     build x86_64 "$X86_64_PREFIX"
-    if [ "$BUILD_I686" ]; then
-        COMPLETE_MSG="$COMPLETE_MSG and "
-    fi
-    COMPLETE_MSG="$COMPLETE_MSG '$X86_64_PREFIX/bin'"
+    ADD_TO_PATH+=("'$X86_64_PREFIX/bin'")
 fi
-
-COMPLETE_MSG="$COMPLETE_MSG to PATH."
 
 if [ ! "$KEEP_ARTIFACTS" ]; then
     remove_path "$SRC_PATH"
@@ -527,6 +559,28 @@ if [ ! "$KEEP_ARTIFACTS" ]; then
     remove_path "$LOG_FILE"
 fi
 
-printf "%s\n" "$COMPLETE_MSG"
+cat >${ROOT_PATH}/activate.sh <<EOF
+#!/usr/bin/env bash
+
+MYDIR="\$(realpath \$(dirname \${BASH_SOURCE[0]}))"
+export PATH="\${MYDIR}/i686/bin:\${MYDIR}/x86_64/bin:\${PATH}"
+EOF
+chmod +x ${ROOT_PATH}/activate.sh
+
+if [ ! -z ${TARBALL} ]; then
+    if [ "$BUILD_I586" ]; then
+        TAR_DIRS="i586"
+    fi
+    if [ "$BUILD_I686" ]; then
+        TAR_DIRS="i686"
+    fi
+    if [ "$BUILD_X86_64" ]; then
+        TAR_DIRS="${TAR_DIRS} x86_64"
+    fi
+    execute "generating tarball ${TARBALL}" "" \
+        cd ${ROOT_PATH} && tar --transform "s,^,mingw-w64-sysroot/," -cjf ${TARBALL} ${TAR_DIRS} activate.sh
+fi
+
+printf "(%d/%d): %s\n" "$CURRENT_STEP" "$TOTAL_STEPS" "complete, to use MinGW-w64 everywhere run: source ${ROOT_PATH}/activate.sh"
 
 exit 0

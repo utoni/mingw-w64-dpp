@@ -1,0 +1,64 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+      - tmp
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  release:
+    types: [created]
+  schedule:
+    - cron: "0 13 * * 1"
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ["ubuntu-latest", "ubuntu-22.04"]
+        include:
+          - compiler: "gcc"
+            os: "ubuntu-latest"
+            name: "default"
+          - compiler: "gcc-9"
+            os: "ubuntu-22.04"
+            name: "gcc9"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Install Ubuntu Prerequisites
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install autoconf automake cmake libtool pkg-config gettext flex bison
+          sudo apt-get install ${{ matrix.compiler }} lcov
+      - name: Build
+        run: |
+          ./mingw-w64-build --jobs 8 --keep-artifacts --tarball ./mingw-w64-toolchain-${{ matrix.name }}.tbz2 i686 x86_64
+      - name: SHA512
+        run: |
+          sha512sum -b ./mingw-w64-toolchain-${{ matrix.name }}.tbz2 >./mingw-w64-toolchain-${{ matrix.name }}.tbz2.sha512
+      - name: Activate
+        run: |
+          mkdir tmp
+          cd tmp
+          tar -xjf ../mingw-w64-toolchain-${{ matrix.name }}.tbz2
+          cd ..
+          source ./tmp/mingw-w64-sysroot/activate.sh
+          x86_64-w64-mingw32-gcc -v
+          x86_64-w64-mingw32-g++ -v
+      - name: Upload Toolchain
+        if: startsWith(matrix.name, 'gcc9')
+        uses: actions/upload-artifact@v4
+        with:
+          path: |
+            ./mingw-w64-toolchain-${{ matrix.name }}.tbz2
+            ./mingw-w64-toolchain-${{ matrix.name }}.tbz2.sha512
+          retention-days: 7
