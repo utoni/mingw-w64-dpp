@@ -1,0 +1,47 @@
+image: debian:stable
+
+stages:
+  - build
+  - activate
+
+before_script:
+  - export DEBIAN_FRONTEND=noninteractive
+  - apt-get update -qq
+  - >
+      apt-get install -y -qq \
+        coreutils wget tar gzip bzip2 patch cmake make binutils gcc g++ autoconf automake flex bison texinfo \
+        curl xz-utils build-essential git
+
+build-again:
+  script:
+    - ./mingw-w64-build --jobs 8 --keep-artifacts --tarball ./x86_64-w64-mingw32-toolchain.tbz2 x86_64
+    - sha512sum -b ./x86_64-w64-mingw32-toolchain.tbz2 >./x86_64-w64-mingw32-toolchain.tbz2.sha512
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - ./x86_64-w64-mingw32-toolchain.tbz2
+      - ./x86_64-w64-mingw32-toolchain.tbz2.sha512
+  stage: build
+  only:
+    - main
+  when: manual
+
+build:
+  script:
+    - ./mingw-w64-build --jobs 8 --keep-artifacts --tarball ./x86_64-w64-mingw32-toolchain.tbz2 x86_64
+    - sha512sum -b ./x86_64-w64-mingw32-toolchain.tbz2 >./x86_64-w64-mingw32-toolchain.tbz2.sha512
+    - mkdir tmp
+    - cd tmp
+    - tar -xjf ../x86_64-w64-mingw32-toolchain.tbz2
+    - cd ..
+    - source ./tmp/mingw-w64-sysroot/activate.sh
+    - x86_64-w64-mingw32-gcc -v
+    - x86_64-w64-mingw32-g++ -v
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - ./x86_64-w64-mingw32-toolchain.tbz2
+      - ./x86_64-w64-mingw32-toolchain.tbz2.sha512
+  stage: build
+  only:
+    - main
