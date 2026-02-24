@@ -46,7 +46,7 @@ jobs:
       - run: |
           env ASAN_OPTIONS=alloc_dealloc_mismatch=0 ./examples/dpp-example-cplusplus-EASTL.run
       - run: |
-          wget 'https://github.com/utoni/mingw-w64-build-ng/releases/download/v1.0/mingw-w64-toolchain.tbz2' -O ./mingw-w64-toolchain.tbz2
+          wget 'https://github.com/utoni/mingw-w64-build-ng/releases/download/v1.2/mingw-w64-toolchain.tbz2' -O ./mingw-w64-toolchain.tbz2
       - run: |
           make examples-clean
       - run: |
