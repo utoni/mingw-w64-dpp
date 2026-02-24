@@ -21,6 +21,10 @@ typedef NTSTATUS NTAPI (*ZwQuerySystemInformation_t) (_In_ int SystemInformation
 typedef NTSTATUS NTAPI (*_ZwCreateFile_t) (_Out_ PHANDLE FileHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PLARGE_INTEGER AllocationSize, _In_ ULONG FileAttributes, _In_ ULONG ShareAccess, _In_ ULONG CreateDisposition, _In_ ULONG CreateOptions, _In_ PVOID EaBuffer, _In_ ULONG EaLength);
 typedef NTSTATUS NTAPI (*_ZwClose_t) (_In_ HANDLE Handle);
 typedef NTSTATUS NTAPI (*_ZwWriteFile_t) (_In_ HANDLE FileHandle, _In_ HANDLE Event, _In_ PIO_APC_ROUTINE ApcRoutine, _In_ PVOID ApcContext, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PVOID Buffer, _In_ ULONG Length, _In_ PLARGE_INTEGER ByteOffset, _In_ PULONG Key);
+typedef PEX_TIMER (*_ExAllocateTimer_t) (_In_opt_ PEXT_CALLBACK Callback, _In_opt_ PVOID CallbackContext, _In_ ULONG Attributes);
+typedef BOOLEAN (*_ExCancelTimer_t) (_In_ PEX_TIMER Timer, _In_opt_ PEXT_CANCEL_PARAMETERS Parameters);
+typedef BOOLEAN (*_ExSetTimer_t) (_In_ PEX_TIMER Timer, _In_ LONGLONG DueTime, _In_ LONGLONG Period, _In_opt_ PEXT_SET_PARAMETERS Parameters);
+typedef BOOLEAN (*_ExDeleteTimer_t) (_In_ PEX_TIMER Timer, _In_ BOOLEAN Cancel, _In_ BOOLEAN Wait, _In_ PEXT_DELETE_PARAMETERS Parameters);
 
 static MmMapIoSpaceEx_t _MmMapIoSpaceEx = NULL;
 static ObOpenObjectByPointer_t _ObOpenObjectByPointer = NULL;
@@ -35,6 +39,10 @@ static ZwQuerySystemInformation_t _ZwQuerySystemInformation = NULL;
 static _ZwCreateFile_t __ZwCreateFile = NULL;
 static _ZwClose_t __ZwClose = NULL;
 static _ZwWriteFile_t __ZwWriteFile = NULL;
+static _ExAllocateTimer_t __ExAllocateTimer = NULL;
+static _ExCancelTimer_t __ExCancelTimer = NULL;
+static _ExSetTimer_t __ExSetTimer = NULL;
+static _ExDeleteTimer_t __ExDeleteTimer = NULL;
 
 int __cdecl ntdll_zw_functions (void)
 {
@@ -236,6 +244,66 @@ int __cdecl ntdll_zw_functions (void)
 #endif
         retval++;
     }
+#ifdef __cplusplus
+    RtlInitUnicodeString(&fnName, skCrypt(L"ExAllocateTimer"));
+#else
+    RtlInitUnicodeString(&fnName, L"ExAllocateTimer");
+#endif
+    __ExAllocateTimer = (_ExAllocateTimer_t)MmGetSystemRoutineAddress(&fnName);
+    if (__ExAllocateTimer == NULL)
+    {
+#ifdef __cplusplus
+        DbgPrint(skCrypt("%s\n"), skCrypt("System routine ExAllocateTimer not found."));
+#else
+        DbgPrint("%s\n", "System routine ExAllocateTimer not found.");
+#endif
+        retval++;
+    }
+#ifdef __cplusplus
+    RtlInitUnicodeString(&fnName, skCrypt(L"ExCancelTimer"));
+#else
+    RtlInitUnicodeString(&fnName, L"ExCancelTimer");
+#endif
+    __ExCancelTimer = (_ExCancelTimer_t)MmGetSystemRoutineAddress(&fnName);
+    if (__ExCancelTimer == NULL)
+    {
+#ifdef __cplusplus
+        DbgPrint(skCrypt("%s\n"), skCrypt("System routine ExCancelTimer not found."));
+#else
+        DbgPrint("%s\n", "System routine ExCancelTimer not found.");
+#endif
+        retval++;
+    }
+#ifdef __cplusplus
+    RtlInitUnicodeString(&fnName, skCrypt(L"ExSetTimer"));
+#else
+    RtlInitUnicodeString(&fnName, L"ExSetTimer");
+#endif
+    __ExSetTimer = (_ExSetTimer_t)MmGetSystemRoutineAddress(&fnName);
+    if (__ExSetTimer == NULL)
+    {
+#ifdef __cplusplus
+        DbgPrint(skCrypt("%s\n"), skCrypt("System routine ExSetTimer not found."));
+#else
+        DbgPrint("%s\n", "System routine ExSetTimer not found.");
+#endif
+        retval++;
+    }
+#ifdef __cplusplus
+    RtlInitUnicodeString(&fnName, skCrypt(L"ExDeleteTimer"));
+#else
+    RtlInitUnicodeString(&fnName, L"ExDeleteTimer");
+#endif
+    __ExDeleteTimer = (_ExDeleteTimer_t)MmGetSystemRoutineAddress(&fnName);
+    if (__ExDeleteTimer == NULL)
+    {
+#ifdef __cplusplus
+        DbgPrint(skCrypt("%s\n"), skCrypt("System routine ExDeleteTimer not found."));
+#else
+        DbgPrint("%s\n", "System routine ExDeleteTimer not found.");
+#endif
+        retval++;
+    }
 
     return retval;
 }
@@ -243,6 +311,9 @@ int __cdecl ntdll_zw_functions (void)
 
 PVOID NTAPI MmMapIoSpaceEx (_In_ PHYSICAL_ADDRESS PhysicalAddress, _In_ SIZE_T NumberOfBytes, _In_ ULONG Protect)
 {
+    if (_MmMapIoSpaceEx == NULL)
+        return NULL;
+
     return _MmMapIoSpaceEx (PhysicalAddress, NumberOfBytes, Protect);
 }
 
@@ -292,6 +363,9 @@ NTSTATUS NTAPI WrapperMmCopyVirtualMemory (_In_ PEPROCESS SourceProcess, _In_ PV
 
 PVOID NTAPI RtlLookupFunctionEntry (_In_ DWORD64 ControlPc, _Out_ PDWORD64 ImageBase, _Out_ PVOID HistoryTable)
 {
+    if (_RtlLookupFunctionEntry == NULL)
+        return NULL;
+
     return _RtlLookupFunctionEntry (ControlPc, ImageBase, HistoryTable);
 }
 
@@ -402,6 +476,58 @@ NTSTATUS NTAPI _ZwWriteFile (_In_ HANDLE FileHandle, _In_ HANDLE Event, _In_ PIO
 NTSTATUS NTAPI WrapperZwWriteFile (_In_ HANDLE FileHandle, _In_ HANDLE Event, _In_ PIO_APC_ROUTINE ApcRoutine, _In_ PVOID ApcContext, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PVOID Buffer, _In_ ULONG Length, _In_ PLARGE_INTEGER ByteOffset, _In_ PULONG Key)
 {
     return __ZwWriteFile (FileHandle, Event, ApcRoutine, ApcContext, StatusBlock, Buffer, Length, ByteOffset, Key);
+}
+
+PEX_TIMER _ExAllocateTimer (_In_opt_ PEXT_CALLBACK Callback, _In_opt_ PVOID CallbackContext, _In_ ULONG Attributes)
+{
+    if (__ExAllocateTimer == NULL)
+        return NULL;
+
+    return __ExAllocateTimer (Callback, CallbackContext, Attributes);
+}
+
+PEX_TIMER WrapperExAllocateTimer (_In_opt_ PEXT_CALLBACK Callback, _In_opt_ PVOID CallbackContext, _In_ ULONG Attributes)
+{
+    return __ExAllocateTimer (Callback, CallbackContext, Attributes);
+}
+
+BOOLEAN _ExCancelTimer (_In_ PEX_TIMER Timer, _In_opt_ PEXT_CANCEL_PARAMETERS Parameters)
+{
+    if (__ExCancelTimer == NULL)
+        return FALSE;
+
+    return __ExCancelTimer (Timer, Parameters);
+}
+
+BOOLEAN WrapperExCancelTimer (_In_ PEX_TIMER Timer, _In_opt_ PEXT_CANCEL_PARAMETERS Parameters)
+{
+    return __ExCancelTimer (Timer, Parameters);
+}
+
+BOOLEAN _ExSetTimer (_In_ PEX_TIMER Timer, _In_ LONGLONG DueTime, _In_ LONGLONG Period, _In_opt_ PEXT_SET_PARAMETERS Parameters)
+{
+    if (__ExSetTimer == NULL)
+        return FALSE;
+
+    return __ExSetTimer (Timer, DueTime, Period, Parameters);
+}
+
+BOOLEAN WrapperExSetTimer (_In_ PEX_TIMER Timer, _In_ LONGLONG DueTime, _In_ LONGLONG Period, _In_opt_ PEXT_SET_PARAMETERS Parameters)
+{
+    return __ExSetTimer (Timer, DueTime, Period, Parameters);
+}
+
+BOOLEAN _ExDeleteTimer (_In_ PEX_TIMER Timer, _In_ BOOLEAN Cancel, _In_ BOOLEAN Wait, _In_ PEXT_DELETE_PARAMETERS Parameters)
+{
+    if (__ExDeleteTimer == NULL)
+        return FALSE;
+
+    return __ExDeleteTimer (Timer, Cancel, Wait, Parameters);
+}
+
+BOOLEAN WrapperExDeleteTimer (_In_ PEX_TIMER Timer, _In_ BOOLEAN Cancel, _In_ BOOLEAN Wait, _In_ PEXT_DELETE_PARAMETERS Parameters)
+{
+    return __ExDeleteTimer (Timer, Cancel, Wait, Parameters);
 }
 
 #ifdef __cplusplus

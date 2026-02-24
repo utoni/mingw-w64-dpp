@@ -18,13 +18,14 @@ while read -r line; do
         continue
     fi
 
-    rtype=$(printf '%s\n' "${line}" | grep -oE '(NTSTATUS NTAPI|VOID NTAPI|PVOID NTAPI)')
+    rtype=$(printf '%s\n' "${line}" | grep -oE '^(NTSYSAPI |NTSYSCALLAPI |)(NTSTATUS NTAPI|VOID|PVOID NTAPI|BOOLEAN|PEX_TIMER)')
     if [ -z "${rtype}" ]; then
-        printf '%s\n' "Line ${CURLINE}: Missing return value of either type 'NTSTATUS NTAPI' or 'VOID NTAPI'." >&2
+        printf '%s\n' "Line ${CURLINE}: Missing return value of either type 'NTSTATUS NTAPI', 'VOID', 'PVOID', 'BOOLEAN' or 'PEX_TIMER'." >&2
         VALID=0
     fi
+    rtype=$(printf '%s\n' "${rtype}" | sed 's/\(.*\)\(NTSYSAPI\|NTSYSCALLAPI\) \(.*\)/\1\3/')
 
-    fnname=$(printf '%s\n' "${line}" | grep -oE '(_|)(Zw|Rtl|Ob[^j]|Mm|Io)[^ (]*')
+    fnname=$(printf '%s\n' "${line}" | grep -oE '(_|)(Ex|Zw|Rtl|Ob[^j]|Mm|Io)[^ (]*')
     if [ -z "${fnname}" ]; then
         printf '%s\n' "Line ${CURLINE}: Missing function name." >&2
         VALID=0
@@ -104,7 +105,23 @@ ${rtype} ${fnname} ${fnsig}
 EOF
         )
         case $rtype in
-        NTSTATUS*)
+        *BOOLEAN*)
+            WRAPPERS=$(cat <<EOF
+${WRAPPERS}
+    if (${VAR} == NULL)
+        return FALSE;
+
+    return ${VAR} (${params});
+}
+
+${rtype} Wrapper${fnname_str} ${fnsig}
+{
+    return ${VAR} (${params});
+}
+EOF
+            )
+        ;;
+        *NTSTATUS*)
             WRAPPERS=$(cat <<EOF
 ${WRAPPERS}
     if (${VAR} == NULL)
@@ -120,18 +137,42 @@ ${rtype} Wrapper${fnname_str} ${fnsig}
 EOF
             )
         ;;
-        PVOID*)
+        *PVOID*|*PEX_TIMER*)
             WRAPPERS=$(cat <<EOF
 ${WRAPPERS}
+    if (${VAR} == NULL)
+        return NULL;
+
     return ${VAR} (${params});
 }
 
-${rtype} Wrapper${fnname} ${fnsig}
+${rtype} Wrapper${fnname_str} ${fnsig}
 {
     return ${VAR} (${params});
 }
 EOF
             )
+        ;;
+        *VOID*)
+            WRAPPERS=$(cat <<EOF
+${WRAPPERS}
+    if (${VAR} == NULL)
+        return;
+
+    return ${VAR} (${params});
+}
+
+${rtype} Wrapper${fnname_str} ${fnsig}
+{
+    return ${VAR} (${params});
+}
+EOF
+            )
+        ;;
+        *)
+            printf 'Invalid return type "%s" for function name "%s".\n' "${rtype}" "${fnname}" >&2
+            exit 1
+        ;;
         esac
     fi
 done < "${FN_FILE}"

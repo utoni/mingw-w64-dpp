@@ -2,6 +2,7 @@
 #define DDK_THREAD 1
 
 #include <ntddk.h>
+#include <stdint.h>
 
 #include <EASTL/deque.h>
 #include <EASTL/functional.h>
@@ -9,14 +10,30 @@
 
 extern "C" void InterceptorThreadRoutine(PVOID threadContext);
 extern "C" void DpcTimerInterceptor(PKDPC Dpc, PVOID Context, PVOID Arg1, PVOID Arg2);
+extern "C" void ExTimerInterceptor(PEX_TIMER Timer, PVOID Context);
 
 namespace DriverThread
 {
+class PerformanceCounter {
+public:
+    PerformanceCounter();
+    ~PerformanceCounter();
+
+    void Start();
+    void Stop();
+    uint64_t MeasureElapsedMs(uint64_t iterations = 0);
+
+private:
+    LARGE_INTEGER m_Start;
+    LARGE_INTEGER m_Frequency;
+    uint64_t m_Elapsed;
+};
+
 class Mutex
 {
 public:
-    Mutex(void);
-    ~Mutex(void);
+    Mutex();
+    ~Mutex();
 
 private:
     void Lock();
@@ -31,7 +48,7 @@ class LockGuard
 {
 public:
     LockGuard(Mutex & m);
-    ~LockGuard(void);
+    ~LockGuard();
 
 private:
     Mutex m_Lock;
@@ -40,11 +57,11 @@ private:
 class ThreadArgs : public virtual eastl::enable_shared_from_this<ThreadArgs>
 {
 public:
-    ThreadArgs(void)
+    ThreadArgs()
     {
     }
     ThreadArgs(const ThreadArgs &) = delete;
-    virtual ~ThreadArgs(void)
+    virtual ~ThreadArgs()
     {
     }
 };
@@ -54,17 +71,17 @@ using ThreadRoutine = eastl::function<NTSTATUS(eastl::shared_ptr<ThreadArgs> arg
 class Thread
 {
 public:
-    Thread(void);
+    Thread();
     Thread(const Thread &) = delete;
-    ~Thread(void);
+    ~Thread();
     NTSTATUS Start(ThreadRoutine routine, eastl::shared_ptr<ThreadArgs> args);
     NTSTATUS WaitForTermination(LONGLONG timeout = 0);
     NTSTATUS WaitForTerminationIndefinitely();
-    HANDLE GetThreadId(void)
+    HANDLE GetThreadId()
     {
         return m_threadId;
     }
-    bool isRunning(void)
+    bool isRunning()
     {
         return GetThreadId() != nullptr;
     }
@@ -82,10 +99,10 @@ private:
 class Spinlock
 {
 public:
-    Spinlock(void);
-    NTSTATUS Acquire(void);
-    void Release(void);
-    KIRQL GetOldIrql(void);
+    Spinlock();
+    NTSTATUS Acquire();
+    void Release();
+    KIRQL GetOldIrql();
 
 private:
     KIRQL m_oldIrql;
@@ -108,7 +125,9 @@ class Event
 public:
     Event();
     NTSTATUS Wait(LONGLONG timeout = -1);
+    NTSTATUS WaitIndefinitely();
     NTSTATUS Notify();
+    LONG Reset();
 
 private:
     KEVENT m_event;
@@ -122,11 +141,11 @@ public:
     WorkItem(const eastl::shared_ptr<void> & user) : m_user(std::move(user))
     {
     }
-    virtual ~WorkItem(void)
+    virtual ~WorkItem()
     {
     }
     template <class T>
-    eastl::shared_ptr<T> Get(void)
+    eastl::shared_ptr<T> Get()
     {
         return eastl::static_pointer_cast<T>(m_user);
     }
@@ -145,9 +164,9 @@ using WorkerRoutine = eastl::function<NTSTATUS(WorkItem & item)>;
 class WorkQueue final
 {
 public:
-    WorkQueue(void);
+    WorkQueue();
     WorkQueue(const WorkQueue &) = delete;
-    ~WorkQueue(void);
+    ~WorkQueue();
     NTSTATUS Start(WorkerRoutine routine);
     void Stop(bool wait = true);
     void Enqueue(WorkItem & item);
@@ -164,16 +183,17 @@ private:
     static NTSTATUS WorkerInterceptorRoutine(eastl::shared_ptr<ThreadArgs> args);
 };
 
-using DpcRoutine = eastl::function<void(void)>;
+using DpcRoutine = eastl::function<void()>;
 
 class DpcTimer
 {
 public:
     DpcTimer();
-    ~DpcTimer(void);
-    bool Start(const DpcRoutine & routine, LONGLONG timeout = -100000 /* 10 ms */,
+    ~DpcTimer();
+    bool Start(const DpcRoutine & routine, LONGLONG timeout,
                bool periodic = false);
     bool StopAndWait();
+
 private:
     friend void ::DpcTimerInterceptor(PKDPC Dpc, PVOID Context, PVOID Arg1, PVOID Arg2);
 
@@ -182,6 +202,23 @@ private:
     DpcRoutine m_Callback;
 };
 
+using ExTimerRoutine = eastl::function<void()>;
+
+class ExTimer
+{
+public:
+    ExTimer();
+    ~ExTimer();
+    bool Start(const ExTimerRoutine & routine, LONGLONG timeout,
+               bool periodic = false, bool high_precision = false);
+    bool StopAndWait();
+
+private:
+    friend void ::ExTimerInterceptor(PEX_TIMER Timer, PVOID Context);
+
+    PEX_TIMER m_Timer;
+    ExTimerRoutine m_Callback;
+};
 }; // namespace DriverThread
 
 #endif

@@ -5,6 +5,8 @@
 #include <DriverThread.hpp>
 
 static DriverThread::Thread dpc_thread;
+static DriverThread::Thread worker_thread;
+static DriverThread::ExTimer timer;
 
 class TestSmth
 {
@@ -144,7 +146,6 @@ static void test_cplusplus(void)
     DbgPrint("MainThread semaphore signaled.\n");
     ctx->dth.WaitForTermination();
     ctx->dth.WaitForTermination();
-    DbgPrint("MainThread EOF\n");
 
     DriverThread::WorkQueue work_queue;
     DbgPrint("WorkQueue test.\n");
@@ -211,19 +212,57 @@ static void test_cplusplus(void)
 
     dpc_thread.Start([](eastl::shared_ptr<DriverThread::ThreadArgs>)
     {
-        size_t dpc_calls = 0;
+        static size_t dpc_calls = 0;
         DriverThread::DpcTimer timer;
-        auto ret = timer.Start([&dpc_calls]() {
+        auto ret = timer.Start([]() {
             dpc_calls++;
         }, -166666, true);
         if (ret)
             DbgPrint("Dpc Timer start failed, already started?\n");
         LARGE_INTEGER li;
         li.QuadPart = -166666 * 60 * 3;
-        KeDelayExecutionThread(KernelMode, TRUE, &li);
+        KeDelayExecutionThread(KernelMode, FALSE, &li);
+        timer.StopAndWait();
         DbgPrint("DPC Timer Routine calls: %zu\n", dpc_calls);
         return 0;
     }, nullptr);
+
+    worker_thread.Start([](eastl::shared_ptr<DriverThread::ThreadArgs>)
+    {
+        DriverThread::PerformanceCounter perfcnt;
+        perfcnt.Start();
+
+        LARGE_INTEGER li;
+        li.QuadPart = -166666 * 60 * 1;
+        KeDelayExecutionThread(KernelMode, FALSE, &li);
+
+        perfcnt.Stop();
+        DbgPrint("PerformanceCounter measures: %llums\n", perfcnt.MeasureElapsedMs());
+
+        perfcnt.Start();
+
+        li.QuadPart = -166666 * 60 * 1;
+        KeDelayExecutionThread(KernelMode, FALSE, &li);
+
+        perfcnt.Stop();
+        DbgPrint("PerformanceCounter measures: %llu/ms\n", perfcnt.MeasureElapsedMs(10000));
+
+        return 0;
+    }, nullptr);
+
+    uint64_t run_count = 0;
+    DriverThread::PerformanceCounter perfcnt;
+    perfcnt.Start();
+    timer.Start([&run_count]() {
+        run_count++;
+    }, -100000, true, true);
+    LARGE_INTEGER li;
+    li.QuadPart = -166666 * 60 * 3;
+    KeDelayExecutionThread(KernelMode, FALSE, &li);
+    perfcnt.Stop();
+    DbgPrint("HPET PerformanceCounter measures: %llums\n", perfcnt.MeasureElapsedMs());
+    timer.StopAndWait();
+    DbgPrint("HPET Callback runs: %llu\n", run_count);
 }
 
 extern "C"
@@ -250,6 +289,7 @@ extern "C"
         (void)DriverObject;
 
         dpc_thread.WaitForTerminationIndefinitely();
+        worker_thread.WaitForTerminationIndefinitely();
 
         delete cdtor_test;
         DbgPrint("%s\n", "Bye ring0!");

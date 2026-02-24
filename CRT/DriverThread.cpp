@@ -1,5 +1,17 @@
 #include <DriverThread.hpp>
 
+extern "C" {
+    extern PEX_TIMER WrapperExAllocateTimer (_In_opt_ PEXT_CALLBACK Callback,
+                                             _In_opt_ PVOID CallbackContext, _In_ ULONG Attributes);
+    extern BOOLEAN WrapperExCancelTimer (_In_ PEX_TIMER Timer, _In_opt_ PEXT_CANCEL_PARAMETERS Parameters);
+    extern BOOLEAN WrapperExSetTimer (_In_ PEX_TIMER Timer, _In_ LONGLONG DueTime, _In_ LONGLONG Period,
+                                      _In_opt_ PEXT_SET_PARAMETERS Parameters);
+    extern BOOLEAN WrapperExDeleteTimer (_In_ PEX_TIMER Timer, _In_ BOOLEAN Cancel,
+                                         _In_ BOOLEAN Wait, _In_ PEXT_DELETE_PARAMETERS Parameters);
+
+    extern void ExInitializeDeleteTimerParameters(PEXT_DELETE_PARAMETERS);
+};
+
 class WorkQueueArgs : public DriverThread::ThreadArgs
 {
     friend class WorkQueue;
@@ -16,13 +28,48 @@ private:
     DriverThread::WorkQueue * m_wq;
 };
 
-// Thread
+// PerformanceCounter
 
-DriverThread::Thread::Thread(void)
+DriverThread::PerformanceCounter::PerformanceCounter()
+    : m_Start{}, m_Frequency{}, m_Elapsed{0}
 {
 }
 
-DriverThread::Thread::~Thread(void)
+DriverThread::PerformanceCounter::~PerformanceCounter()
+{
+}
+
+void DriverThread::PerformanceCounter::Start()
+{
+    m_Start = KeQueryPerformanceCounter(&m_Frequency);
+}
+
+void DriverThread::PerformanceCounter::Stop()
+{
+    const LARGE_INTEGER end = KeQueryPerformanceCounter(NULL);
+    LARGE_INTEGER elapsed_us;
+    elapsed_us.QuadPart = end.QuadPart - m_Start.QuadPart;
+    elapsed_us.QuadPart *= 1000000;
+    elapsed_us.QuadPart /= m_Frequency.QuadPart;
+    m_Elapsed += elapsed_us.QuadPart;
+}
+
+uint64_t DriverThread::PerformanceCounter::MeasureElapsedMs(uint64_t iterations)
+{
+    float iter_per_us = (float)m_Elapsed / 1000.0f;
+    if (iterations > 0)
+        iter_per_us = (float)iterations / iter_per_us;
+    m_Elapsed = 0;
+    return iter_per_us;
+}
+
+// Thread
+
+DriverThread::Thread::Thread()
+{
+}
+
+DriverThread::Thread::~Thread()
 {
     WaitForTerminationIndefinitely();
 }
@@ -133,22 +180,22 @@ NTSTATUS DriverThread::Thread::WaitForTerminationIndefinitely()
 
 // Spinlock
 
-DriverThread::Spinlock::Spinlock(void)
+DriverThread::Spinlock::Spinlock()
 {
     KeInitializeSpinLock(&m_spinLock);
 }
 
-NTSTATUS DriverThread::Spinlock::Acquire(void)
+NTSTATUS DriverThread::Spinlock::Acquire()
 {
     return KeAcquireSpinLock(&m_spinLock, &m_oldIrql);
 }
 
-void DriverThread::Spinlock::Release(void)
+void DriverThread::Spinlock::Release()
 {
     KeReleaseSpinLock(&m_spinLock, m_oldIrql);
 }
 
-KIRQL DriverThread::Spinlock::GetOldIrql(void)
+KIRQL DriverThread::Spinlock::GetOldIrql()
 {
     return m_oldIrql;
 }
@@ -184,27 +231,37 @@ NTSTATUS DriverThread::Event::Wait(LONGLONG timeout)
     return KeWaitForSingleObject(&m_event, Executive, KernelMode, FALSE, &li_timeout);
 }
 
+NTSTATUS DriverThread::Event::WaitIndefinitely()
+{
+    return KeWaitForSingleObject(&m_event, Executive, KernelMode, FALSE, NULL);
+}
+
 NTSTATUS DriverThread::Event::Notify()
 {
     return KeSetEvent(&m_event, 0, FALSE);
 }
 
+LONG DriverThread::Event::Reset()
+{
+    return KeResetEvent(&m_event);
+}
+
 // Mutex
 
-DriverThread::Mutex::Mutex(void)
+DriverThread::Mutex::Mutex()
 {
 }
 
-DriverThread::Mutex::~Mutex(void)
+DriverThread::Mutex::~Mutex()
 {
 }
 
-void DriverThread::Mutex::Lock(void)
+void DriverThread::Mutex::Lock()
 {
     while (m_interlock == 1 || InterlockedCompareExchange(&m_interlock, 1, 0) == 1) {}
 }
 
-void DriverThread::Mutex::Unlock(void)
+void DriverThread::Mutex::Unlock()
 {
     m_interlock = 0;
 }
@@ -216,19 +273,19 @@ DriverThread::LockGuard::LockGuard(Mutex & m) : m_Lock(m)
     m_Lock.Lock();
 }
 
-DriverThread::LockGuard::~LockGuard(void)
+DriverThread::LockGuard::~LockGuard()
 {
     m_Lock.Unlock();
 }
 
 // WorkQueue
 
-DriverThread::WorkQueue::WorkQueue(void)
+DriverThread::WorkQueue::WorkQueue()
     : m_mutex(), m_queue(), m_wakeEvent(), m_stopWorker(false), m_worker(), m_workerRoutine(nullptr)
 {
 }
 
-DriverThread::WorkQueue::~WorkQueue(void)
+DriverThread::WorkQueue::~WorkQueue()
 {
     Stop();
 }
@@ -254,12 +311,15 @@ NTSTATUS DriverThread::WorkQueue::Start(WorkerRoutine routine)
 
 void DriverThread::WorkQueue::Stop(bool wait)
 {
-    LockGuard lock(m_mutex);
-    if (m_stopWorker == true)
     {
-        return;
+        LockGuard lock(m_mutex);
+        if (m_stopWorker == true)
+        {
+            return;
+        }
+        m_stopWorker = true;
     }
-    m_stopWorker = true;
+
     m_wakeEvent.Notify();
     if (wait)
     {
@@ -309,8 +369,10 @@ NTSTATUS DriverThread::WorkQueue::WorkerInterceptorRoutine(eastl::shared_ptr<Thr
                 break;
             }
 
-            wq->m_wakeEvent.Wait();
-            continue;
+            if (wq->m_wakeEvent.Reset() == 0) {
+                wq->m_wakeEvent.WaitIndefinitely();
+                continue;
+            }
         }
 
         {
@@ -335,7 +397,7 @@ NTSTATUS DriverThread::WorkQueue::WorkerInterceptorRoutine(eastl::shared_ptr<Thr
     return STATUS_SUCCESS;
 }
 
-DriverThread::DpcTimer::DpcTimer(void)
+DriverThread::DpcTimer::DpcTimer()
 {
     KeInitializeTimer(&m_Timer);
 }
@@ -357,13 +419,14 @@ extern "C" void DpcTimerInterceptor(PKDPC Dpc, PVOID Context, PVOID Arg1, PVOID 
 
 bool DriverThread::DpcTimer::Start(const DpcRoutine & routine, LONGLONG timeout, bool periodic)
 {
+    LONG periodMs = 0;
     LARGE_INTEGER expiration;
     expiration.QuadPart = timeout;
     m_Callback = routine;
+    if (periodic)
+        periodMs = (LONG)((-timeout) / 10000);
     KeInitializeDpc(&m_TimerDpc, DpcTimerInterceptor, this);
-    return KeSetTimerEx(&m_Timer, expiration,
-                        (periodic == true ? timeout * (-1LL) / (10000LL) : 0),
-                        &m_TimerDpc);
+    return KeSetTimerEx(&m_Timer, expiration, periodMs, &m_TimerDpc);
 }
 
 bool DriverThread::DpcTimer::StopAndWait()
@@ -371,4 +434,50 @@ bool DriverThread::DpcTimer::StopAndWait()
     auto queued = KeCancelTimer(&m_Timer);
     KeFlushQueuedDpcs();
     return queued;
+}
+
+DriverThread::ExTimer::ExTimer() : m_Timer{}, m_Callback{nullptr}
+{
+}
+
+DriverThread::ExTimer::~ExTimer()
+{
+    StopAndWait();
+}
+
+extern "C" void ExTimerInterceptor(PEX_TIMER Timer, PVOID Context)
+{
+    UNREFERENCED_PARAMETER(Timer);
+
+    auto self = (DriverThread::ExTimer *)Context;
+    self->m_Callback();
+}
+
+bool DriverThread::ExTimer::Start(const ExTimerRoutine & routine, LONGLONG timeout,
+                                  bool periodic, bool high_precision)
+{
+    m_Callback = routine;
+    m_Timer = WrapperExAllocateTimer(ExTimerInterceptor, this,
+                                     (high_precision ? EX_TIMER_HIGH_RESOLUTION : 0));
+    if (m_Timer == NULL)
+        return false;
+
+    if (WrapperExSetTimer(m_Timer, timeout, (periodic ? -timeout : 0), NULL) == FALSE)
+        return false;
+
+    return true;
+}
+
+bool DriverThread::ExTimer::StopAndWait()
+{
+    bool rv = false;
+
+    if (m_Timer != NULL) {
+        rv = WrapperExCancelTimer(m_Timer, NULL);
+        EXT_DELETE_PARAMETERS params = {};
+        WrapperExDeleteTimer(m_Timer, TRUE, TRUE, &params);
+        m_Timer = NULL;
+    }
+
+    return rv;
 }

@@ -17,3 +17,7 @@ NTSYSCALLAPI NTSTATUS NTAPI ZwQuerySystemInformation(_In_ int SystemInformationC
 NTSYSAPI NTSTATUS NTAPI _ZwCreateFile(_Out_ PHANDLE FileHandle, _In_ ACCESS_MASK DesiredAccess, _In_ POBJECT_ATTRIBUTES ObjectAttributes, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PLARGE_INTEGER AllocationSize, _In_ ULONG FileAttributes, _In_ ULONG ShareAccess, _In_ ULONG CreateDisposition, _In_ ULONG CreateOptions, _In_ PVOID EaBuffer, _In_ ULONG EaLength);
 NTSYSAPI NTSTATUS NTAPI _ZwClose(_In_ HANDLE Handle);
 NTSYSAPI NTSTATUS NTAPI _ZwWriteFile(_In_ HANDLE FileHandle, _In_ HANDLE Event, _In_ PIO_APC_ROUTINE ApcRoutine, _In_ PVOID ApcContext, _Out_ PIO_STATUS_BLOCK StatusBlock, _In_ PVOID Buffer, _In_ ULONG Length, _In_ PLARGE_INTEGER ByteOffset, _In_ PULONG Key);
+PEX_TIMER _ExAllocateTimer(_In_opt_ PEXT_CALLBACK Callback, _In_opt_ PVOID CallbackContext, _In_ ULONG Attributes);
+BOOLEAN _ExCancelTimer(_In_ PEX_TIMER Timer, _In_opt_ PEXT_CANCEL_PARAMETERS Parameters);
+BOOLEAN _ExSetTimer(_In_ PEX_TIMER Timer, _In_ LONGLONG DueTime, _In_ LONGLONG Period, _In_opt_ PEXT_SET_PARAMETERS Parameters);
+BOOLEAN _ExDeleteTimer(_In_ PEX_TIMER Timer, _In_ BOOLEAN Cancel, _In_ BOOLEAN Wait, _In_ PEXT_DELETE_PARAMETERS Parameters);
