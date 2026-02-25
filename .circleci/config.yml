@@ -46,8 +46,6 @@ jobs:
       - run: |
           env ASAN_OPTIONS=alloc_dealloc_mismatch=0 ./examples/dpp-example-cplusplus-EASTL.run
       - run: |
-          wget 'https://github.com/utoni/mingw-w64-build-ng/releases/download/v1.2/mingw-w64-toolchain.tbz2' -O ./mingw-w64-toolchain.tbz2
-      - run: |
           make examples-clean
       - run: |
           make deps-distclean
@@ -56,7 +54,32 @@ jobs:
     docker:
       - image: debian:13
     steps:
+      - checkout
+      - run: export DEBIAN_FRONTEND=noninteractive
+      - run: apt-get update -qq
+      - run: |
+          env DEBIAN_FRONTEND=noninteractive \
+          apt-get install -y -qq \
+          coreutils wget tar gzip bzip2 patch cmake make binutils gcc g++ autoconf automake flex bison texinfo \
+          git subversion curl xz-utils osslsigncode
+      - run: |
+          wget 'https://github.com/utoni/mingw-w64-build-ng/releases/download/v1.2/mingw-w64-toolchain.tbz2' -O ./mingw-w64-toolchain.tbz2
       - run: |
           make deps \
             WERROR=1 JOBS=4 Q= \
             USE_MINGW64_TARBALL=./mingw-w64-toolchain.tbz2
+      - run: |
+          make examples \
+            WERROR=1 JOBS=4 Q= \
+            USE_MINGW64_TARBALL=./mingw-w64-toolchain.tbz2
+      - run: |
+          make examples-clean
+      - run: |
+          make deps-distclean
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+      - build-with-prebuild-toolchain
