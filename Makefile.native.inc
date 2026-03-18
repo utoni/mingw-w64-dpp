@@ -76,7 +76,7 @@ define BUILD_CPP_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CXX) $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c $(1) -o $(2)
+	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c $(1) -o $(2)
 	@echo 'CXX $@'
 endef
 

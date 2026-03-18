@@ -166,4 +166,37 @@ eastl::string format(eastl::string_view fmt, Args &&... args)
     return out;
 }
 
+#define SCOPE_EXIT auto CONCAT(scope_exit_, __LINE__) = make_scope_guard
+#define CONCAT(a, b) CONCAT_IMPL(a, b)
+#define CONCAT_IMPL(a, b) a##b
+
+template <typename F>
+class [[nodiscard]] ScopeGuard {
+private:
+    F func;
+    bool active;
+public:
+    constexpr explicit ScopeGuard(F&& f) noexcept
+        : func(eastl::forward<F>(f)), active(true) {}
+    ScopeGuard(const ScopeGuard&) = delete;
+    ScopeGuard& operator=(const ScopeGuard&) = delete;
+    ScopeGuard(ScopeGuard&& other) noexcept
+        : func(eastl::move(other.func))
+    {
+        other.release();
+    }
+    constexpr ~ScopeGuard() noexcept {
+        if (active) func();
+    }
+    constexpr void release() noexcept {
+        active = false;
+    }
+};
+
+template <typename F>
+ScopeGuard(F&&) -> ScopeGuard<eastl::decay_t<F>>;
+template <typename F>
+constexpr auto make_scope_guard(F&& f) {
+    return ScopeGuard<eastl::decay_t<F>>(eastl::forward<F>(f));
+}
 #endif

@@ -105,6 +105,9 @@ void stl_test()
 
 void more_stl_test()
 {
+    SCOPE_EXIT([]{
+        DbgPrint("%s\n", "Return Scope Guard called!");
+    });
 #ifndef BUILD_USERMODE
     hash_map<int, string> hm;
 

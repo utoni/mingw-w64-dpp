@@ -258,7 +258,7 @@ define INSTALL_EXEC_SIGN
 			-in "$$target" \
 			-out "$(DESTDIR)/$$target"; \
 		$(CP) "$(DPP_ROOT)/sign-driver-on-windows.bat.in" "$(DESTDIR)/$$(basename $$target .sys)-sign-driver-on-windows.bat"; \
-		$(SED) -i -e "s|{{\s*DRIVER_NAME\s*}}|$$target|g" "$(DESTDIR)/$$(basename $$target .sys)-sign-driver-on-windows.bat"; \
+		$(SED) -i -e "s|{{\s*DRIVER_NAME\s*}}|$$(basename $${target})|g" "$(DESTDIR)/$$(basename $$target .sys)-sign-driver-on-windows.bat"; \
 	done
 	$(CP) "$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-ca-cert.pem" '$(DESTDIR)/$(SIGNTOOL_PREFIX)-ca-cert.crt'
 	$(CP) "$(DPP_ROOT)/create_codesign_ca.bat" '$(DESTDIR)/create-codesign-ca-on-windows.bat'
