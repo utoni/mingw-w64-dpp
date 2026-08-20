@@ -122,6 +122,9 @@ path_exists = \
 	$(if $(realpath $1),, \
 	$(error ERROR: $1 does not exist, run `make -C $(DPP_ROOT) deps` first.))
 
+build_dir = \
+	$(foreach f,$2,$(if $1,$1/$f,$f))
+
 define CHECK_REQUIRED_PATHS
 	$(call is_set,$(CC),Makefile argument CC missing)
 	$(call is_set,$(CXX),Makefile argument CXX missing)
@@ -151,7 +154,7 @@ define BUILD_C_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CC) -std=gnu99 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) -c $(1) -o $(2)
+	$(Q)$(CC) -std=gnu99 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) -c '$(1)' -o '$(call build_dir,$(3),$(2))'
 	@echo 'CC  $(2)'
 endef
 
@@ -159,7 +162,7 @@ define BUILD_CPP_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
-	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) $(CXXFLAGS) $(EASTL_CXXFLAGS) $(CUSTOM_CXXFLAGS) -c $(1) -o $(2)
+	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) $(CXXFLAGS) $(EASTL_CXXFLAGS) $(CUSTOM_CXXFLAGS) -c '$(1)' -o '$(call build_dir,$(3),$(2))'
 	@echo 'CXX $@'
 endef
 
@@ -170,9 +173,9 @@ define LINK_C_KERNEL_TARGET
 	$(Q)$(CC) \
 		$(CFLAGS) \
 		$(DRIVER_LDFLAGS) \
-		-Wl,-Map='$(2).map' \
-		-o '$(2)' \
-		$(1) \
+		-Wl,-Map='$(call build_dir,$(3),$(2).map)' \
+		-o '$(call build_dir,$(3),$(2))' \
+		$(call build_dir,$(3),$(1)) \
 		$(LIBCRT_STATIC_LIB) \
 		$(LIBCNATIVE_STATIC_LIB) \
 		$(DRIVER_LIBS) \
@@ -186,8 +189,8 @@ define LINK_C_USER_TARGET
 	$(call is_set,$(2),Second argument: Output object file missing)
 	$(Q)$(CC) \
 		$(CFLAGS) \
-		-o '$(2)' \
-		$(1) \
+		-o '$(call build_dir,$(3),$(2))' \
+		$(call build_dir,$(3),$(1)) \
 		$(EASTL_STATIC_LIB) \
 		$(LIBUSERCRT_STATIC_LIB) \
 		$(LDFLAGS_$(2))
@@ -203,9 +206,9 @@ define LINK_CPP_KERNEL_TARGET
 		$(CXXFLAGS) \
 		$(EASTL_CXXFLAGS) \
 		$(DRIVER_LDFLAGS) \
-		-Wl,-Map='$(2).map' \
-		-o '$(2)' \
-		$(1) \
+		-Wl,-Map='$(call build_dir,$(3),$(2).map)' \
+		-o '$(call build_dir,$(3),$(2))' \
+		$(call build_dir,$(3),$(1)) \
 		$(LDFLAGS_$(2)) \
 		$(EASTL_STATIC_LIB) \
 		$(LIBCRT_STATIC_LIB) \
@@ -224,8 +227,8 @@ define LINK_CPP_USER_TARGET
 		$(CXXFLAGS) \
 		$(EASTL_CXXFLAGS) \
 		$(USER_LDFLAGS) \
-		-o '$(2)' \
-		$(1) \
+		-o '$(call build_dir,$(3),$(2))' \
+		$(call build_dir,$(3),$(1)) \
 		$(EASTL_STATIC_LIB) \
 		$(LIBUSERCRT_STATIC_LIB) \
 		$(USER_LIBS) \
@@ -237,7 +240,7 @@ define INSTALL_EXEC
 	$(call is_set,$(1),First argument: Executables to install missing)
 	$(call is_set,$(DESTDIR),DESTDIR missing)
 	$(INSTALL) -d '$(DESTDIR)/'
-	for target in $(1); do \
+	for target in $(call build_dir,$(2),$(1)); do \
 		$(INSTALL) -s --strip-program='$(dir $(CC))/x86_64-w64-mingw32-strip' "$$target" '$(DESTDIR)'; \
 	done
 endef
@@ -251,7 +254,7 @@ define INSTALL_EXEC_SIGN
 		printf '\n  *** %s ***\n\n' "$(SIGNTOOL) does not exist / not in your PATH / not executable."; \
 		false; \
 	}
-	for target in $(1); do \
+	for target in $(call build_dir,$(2),$(1)); do \
 		rm -f "$(DESTDIR)/$$target"; \
 		$(dir $(CC))/x86_64-w64-mingw32-strip -s "$$target"; \
 		$(SIGNTOOL) sign -pkcs12 '$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-code.p12' \
