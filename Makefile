@@ -18,7 +18,9 @@ export LOCAL_MINGW64_RC
 export SIGNTOOL
 export SIGNTOOL_PREFIX
 
-examples:
+all: deps examples package
+
+examples: deps
 	$(MAKE) -C examples DPP_ROOT=$(realpath $(DPP_ROOT)) all
 	$(MAKE) -C examples DPP_ROOT=$(realpath $(DPP_ROOT)) BUILD_NATIVE=1 all
 
@@ -44,7 +46,7 @@ deps-clean:
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps clean
 	$(MAKE) -C $(DPP_ROOT) BUILD_NATIVE=1 -f Makefile.deps clean
 
-package:
+package: deps
 	$(MAKE) -C $(DPP_ROOT) -f Makefile.deps package
 
 help:
