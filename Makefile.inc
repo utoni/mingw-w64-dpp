@@ -254,14 +254,15 @@ define INSTALL_EXEC_SIGN
 		printf '\n  *** %s ***\n\n' "$(SIGNTOOL) does not exist / not in your PATH / not executable."; \
 		false; \
 	}
-	for target in $(call build_dir,$(2),$(1)); do \
-		rm -f "$(DESTDIR)/$$target"; \
+	set -e; for target in $(call build_dir,$(2),$(1)); do \
+		name=$$(basename "$$target"); \
+		rm -f "$(DESTDIR)/$$name"; \
 		$(dir $(CC))/x86_64-w64-mingw32-strip -s "$$target"; \
 		$(SIGNTOOL) sign -pkcs12 '$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-code.p12' \
 			-in "$$target" \
-			-out "$(DESTDIR)/$$target"; \
+			-out "$(DESTDIR)/$$name"; \
 		$(CP) "$(DPP_ROOT)/sign-driver-on-windows.bat.in" "$(DESTDIR)/$$(basename $$target .sys)-sign-driver-on-windows.bat"; \
-		$(SED) -i -e "s|{{\s*DRIVER_NAME\s*}}|$$(basename $${target})|g" "$(DESTDIR)/$$(basename $$target .sys)-sign-driver-on-windows.bat"; \
+		$(SED) -i -e "s|{{\s*DRIVER_NAME\s*}}|$$name|g" "$(DESTDIR)/$$(basename $$target .sys)-sign-driver-on-windows.bat"; \
 	done
 	$(CP) "$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-ca-cert.pem" '$(DESTDIR)/$(SIGNTOOL_PREFIX)-ca-cert.crt'
 	$(CP) "$(DPP_ROOT)/create_codesign_ca.bat" '$(DESTDIR)/create-codesign-ca-on-windows.bat'
