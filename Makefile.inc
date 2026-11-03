@@ -20,12 +20,16 @@ LOCAL_MINGW64_CC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-gcc
 LOCAL_MINGW64_CXX := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-g++
 LOCAL_MINGW64_AR := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-ar
 LOCAL_MINGW64_RC := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-windres
+LOCAL_MINGW64_STRIP := $(LOCAL_MINGW64_BUILD_DIR)/bin/x86_64-w64-mingw32-strip
 else
 ifeq ($(LOCAL_MINGW64_CXX),)
 $(error LOCAL_MINGW64_CC was set, missing required LOCAL_MINGW64_CXX)
 endif
 ifeq ($(LOCAL_MINGW64_RC),)
 $(error LOCAL_MINGW64_CC was set, missing required LOCAL_MINGW64_RC)
+endif
+ifeq ($(LOCAL_MINGW64_STRIP),)
+$(error LOCAL_MINGW64_CC was set, missing required LOCAL_MINGW64_STRIP)
 endif
 endif
 
@@ -37,7 +41,7 @@ ifeq ($(SIGNTOOL_PREFIX),)
 SIGNTOOL_PREFIX := codesign
 endif
 
-DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX) $(LOCAL_MINGW64_AR) $(LOCAL_MINGW64_RC)
+DDK_GLOBAL_DEPS := deps $(LOCAL_MINGW64_BUILD_SCRIPT) $(LOCAL_MINGW64_BUILD_DIR) $(LOCAL_MINGW64_CC) $(LOCAL_MINGW64_CXX) $(LOCAL_MINGW64_AR) $(LOCAL_MINGW64_RC) $(LOCAL_MINGW64_STRIP)
 
 CP = cp --no-preserve=xattr -v
 INSTALL = install
@@ -47,6 +51,7 @@ CC = $(LOCAL_MINGW64_CC)
 CXX = $(LOCAL_MINGW64_CXX)
 AR = $(LOCAL_MINGW64_AR)
 RC = $(LOCAL_MINGW64_RC)
+STRIP = $(LOCAL_MINGW64_STRIP)
 DDK_INCLUDE_DIR = $(dir $(CC))../x86_64-w64-mingw32/include/ddk
 CFLAGS := -Wall -Wextra -Wno-sign-compare -Wno-strict-aliasing \
 	-m64 -fPIC -fvisibility=hidden \
@@ -129,6 +134,7 @@ define CHECK_REQUIRED_PATHS
 	$(call is_set,$(CC),Makefile argument CC missing)
 	$(call is_set,$(CXX),Makefile argument CXX missing)
 	$(call is_set,$(RC),Makefile argument RC missing)
+	$(call is_set,$(STRIP),Makefile argument STRIP missing)
 	$(call is_set,$(AR),Makefile argument AR missing)
 	$(call is_set,$(DDK_INCLUDE_DIR),Makefile argument DDK_INCLUDE_DIR missing)
 	$(call is_set,$(EASTL_STATIC_LIB),Makefile argument EASTL_STATIC_LIB missing)
@@ -140,6 +146,7 @@ define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(CC))
 	$(call path_exists,$(CXX))
 	$(call path_exists,$(RC))
+	$(call path_exists,$(STRIP))
 	$(call path_exists,$(AR))
 	$(call path_exists,$(DDK_INCLUDE_DIR))
 	$(call path_exists,$(EASTL_STATIC_LIB))
@@ -237,15 +244,17 @@ define LINK_CPP_USER_TARGET
 endef
 
 define INSTALL_EXEC
+	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Executables to install missing)
 	$(call is_set,$(DESTDIR),DESTDIR missing)
 	$(INSTALL) -d '$(DESTDIR)/'
 	for target in $(call build_dir,$(2),$(1)); do \
-		$(INSTALL) -s --strip-program='$(dir $(CC))/x86_64-w64-mingw32-strip' "$$target" '$(DESTDIR)'; \
+		$(INSTALL) -s --strip-program='$(STRIP)' "$$target" '$(DESTDIR)'; \
 	done
 endef
 
 define INSTALL_EXEC_SIGN
+	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Executables to install missing)
 	$(call is_set,$(DESTDIR),DESTDIR missing)
 	$(MAKE) -C '$(DPP_ROOT)' -f Makefile.deps $(SIGNTOOL_PREFIX)
@@ -257,7 +266,7 @@ define INSTALL_EXEC_SIGN
 	set -e; for target in $(call build_dir,$(2),$(1)); do \
 		name=$$(basename "$$target"); \
 		rm -f "$(DESTDIR)/$$name"; \
-		$(dir $(CC))/x86_64-w64-mingw32-strip -s "$$target"; \
+		$(STRIP) -s "$$target"; \
 		$(SIGNTOOL) sign -pkcs12 '$(DPP_ROOT)/$(SIGNTOOL_PREFIX)-code.p12' \
 			-in "$$target" \
 			-out "$(DESTDIR)/$$name"; \
@@ -293,6 +302,7 @@ define HELP_MAKE_OPTIONS
 	@echo -e '\tCC              = $(CC)'
 	@echo -e '\tCXX             = $(CXX)'
 	@echo -e '\tRC              = $(RC)'
+	@echo -e '\tSTRIP           = $(STRIP)'
 	@echo -e '\tDDK_INCLUDE_DIR = $(DDK_INCLUDE_DIR)'
 	@echo -e '\tDPP_ROOT        = $(DPP_ROOT)'
 endef
