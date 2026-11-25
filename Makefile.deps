@@ -67,36 +67,61 @@ endif
 
 $(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/kcrt.c
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+	$(call GENERATE_COMPILE_COMMAND,$(DPP_ROOT)/CRT/kcrt.c,\
+	    $(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).o,\
+	    $(CC) -std=gnu99 $(CFLAGS) -c CRT/kcrt.c -o $@,$(DPP_ROOT))
 	$(Q)$(CC) -std=gnu99 $(CFLAGS) -c CRT/kcrt.c -o $@
 	@echo 'CC  $@'
 
 $(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o: $(CC) $(DPP_ROOT)/CRT/ntdll_zw_functions.c
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+	$(call GENERATE_COMPILE_COMMAND,$(DPP_ROOT)/CRT/ntdll_zw_functions.c,\
+	    $(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).o,\
+	    $(CC) -std=gnu99 $(CFLAGS) -c CRT/ntdll_zw_functions.c -o $@,$(DPP_ROOT))
 	$(Q)$(CC) -std=gnu99 $(CFLAGS) -c CRT/ntdll_zw_functions.c -o $@
 	@echo 'CC  $@'
 
 $(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/ntdll_zw_functions.c
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+	$(call GENERATE_COMPILE_COMMAND,$(DPP_ROOT)/CRT/ntdll_zw_functions.c,\
+	    $(LIBCRT_BUILD_DIR)/ntdll_zw_functions$(NAME_SUFFIX).opp,\
+	    $(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) -c CRT/ntdll_zw_functions.c -o $@,$(DPP_ROOT))
 	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) -c CRT/ntdll_zw_functions.c -o $@
 	@echo 'CXX $@'
 
 $(LIBCRT_BUILD_DIR)/eastl_compat$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/eastl_compat.cpp
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+	$(call GENERATE_COMPILE_COMMAND,$(DPP_ROOT)/CRT/eastl_compat.cpp,\
+	    $(LIBCRT_BUILD_DIR)/eastl_compat$(NAME_SUFFIX).opp,\
+	    $(CXX) -std=c++20 $(CFLAGS) -Wno-format -Wno-format-extra-args $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/eastl_compat.cpp -o $@,\
+	    $(DPP_ROOT))
 	$(Q)$(CXX) -std=c++20 $(CFLAGS) -Wno-format -Wno-format-extra-args $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/eastl_compat.cpp -o $@
 	@echo 'CXX $@'
 
 $(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/kcrt.cpp
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+	$(call GENERATE_COMPILE_COMMAND,$(DPP_ROOT)/CRT/kcrt.cpp,\
+	    $(LIBCRT_BUILD_DIR)/kcrt$(NAME_SUFFIX).opp,\
+	    $(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/kcrt.cpp -o $@,\
+	    $(DPP_ROOT))
 	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/kcrt.cpp -o $@
 	@echo 'CXX $@'
 
 $(LIBCRT_BUILD_DIR)/ucrt$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/ucrt.cpp
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+	$(call GENERATE_COMPILE_COMMAND,$(DPP_ROOT)/CRT/ucrt.cpp,\
+	    $(LIBCRT_BUILD_DIR)/ucrt$(NAME_SUFFIX).opp,\
+	    $(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/ucrt.cpp -o $@,\
+	    $(DPP_ROOT))
 	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/ucrt.cpp -o $@
 	@echo 'CXX $@'
 
 $(LIBCRT_BUILD_DIR)/DriverThread$(NAME_SUFFIX).opp: $(CXX) $(DPP_ROOT)/CRT/DriverThread.cpp $(DPP_ROOT)/CRT/DriverThread.hpp
 	$(Q)test -d '$(LIBCRT_BUILD_DIR)' || mkdir -p '$(LIBCRT_BUILD_DIR)'
+	$(call GENERATE_COMPILE_COMMAND,$(DPP_ROOT)/CRT/DriverThread.cpp,\
+	    $(LIBCRT_BUILD_DIR)/DriverThread$(NAME_SUFFIX).opp,\
+	    $(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/DriverThread.cpp -o $@,\
+	    $(DPP_ROOT))
 	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(EASTL_CXXFLAGS) -c CRT/DriverThread.cpp -o $@
 	@echo 'CXX $@'
 
@@ -169,7 +194,10 @@ deps-build: \
 	$(LIBUSERCRT_STATIC_LIB) \
 	$(SIGNTOOL_PREFIX)
 
-deps: deps-print-local-notice deps-build
+deps: deps-print-local-notice deps-build compile_commands.json
+
+compile_commands.json: deps-build
+	$(call MERGE_COMPILE_COMMANDS,$(wildcard $(DPP_ROOT)/CRT-build/*.o) $(wildcard $(DPP_ROOT)/CRT-build/*.opp),$@)
 
 $(EASTL_STATIC_LIB): $(CXX) $(EASTL_DEPS)
 	$(Q)test -d '$(EASTL_BUILDDIR)' || mkdir -p $(EASTL_BUILDDIR)

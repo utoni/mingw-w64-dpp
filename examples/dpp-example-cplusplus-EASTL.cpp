@@ -3,7 +3,6 @@
 #endif
 
 #include <cstdint>
-#include <stdexcept>
 
 #include <eastl_compat.hpp>
 #include <EASTL/functional.h>

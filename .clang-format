@@ -1,6 +1,6 @@
-Language:        Cpp
-BasedOnStyle                         : LLVM
-Standard                             : Cpp03
+Language    : Cpp
+BasedOnStyle: LLVM
+Standard    : Cpp03
 # BasedOnStyle:  LLVM
 BraceWrapping:
   AfterClass:      false

@@ -157,10 +157,24 @@ define CHECK_REQUIRED_PATHS
 	$(call path_exists,$(LIBUSERCRT_STATIC_LIB))
 endef
 
+define GENERATE_COMPILE_COMMAND
+	$(call is_set,$(strip $(1)),First argument: Source file missing)
+	$(call is_set,$(strip $(2)),Second argument: Output object file missing)
+	$(call is_set,$(strip $(3)),Third argument: FULL compile command missing)
+	$(call is_set,$(strip $(4)),Fourth argument: Project directory missing)
+	@echo 'Compile Command: $(strip $(2)).json'
+	@echo '{"directory":"$(subst ",\",$(strip $(4)))","file":"$(subst ",\",$(strip $(1)))","output":"$(subst ",\",$(strip $(2)))","command":"$(subst ",\",$(strip $(3)))"}' >'$(strip $(2)).json'
+endef
+
 define BUILD_C_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
+	$(call GENERATE_COMPILE_COMMAND,\
+	    $(1),\
+	    $(call build_dir,$(3),$(2)),\
+	    $(CC) -std=gnu99 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) -c "$(1)" -o "$(call build_dir,$(3),$(2))",\
+	    $(CURDIR))
 	$(Q)$(CC) -std=gnu99 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) -c '$(1)' -o '$(call build_dir,$(3),$(2))'
 	@echo 'CC  $(2)'
 endef
@@ -169,8 +183,23 @@ define BUILD_CPP_OBJECT
 	$(call CHECK_REQUIRED_PATHS)
 	$(call is_set,$(1),First argument: Source file missing)
 	$(call is_set,$(2),Second argument: Output object file missing)
+	$(call GENERATE_COMPILE_COMMAND,\
+	    $(1),\
+	    $(call build_dir,$(3),$(2)),\
+	    $(CXX) -std=c++20 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) $(CXXFLAGS) $(EASTL_CXXFLAGS) $(CUSTOM_CXXFLAGS) -c "$(1)" -o "$(call build_dir,$(3),$(2))",\
+	    $(CURDIR))
 	$(Q)$(CXX) -std=c++20 $(CFLAGS) $(CUSTOM_CFLAGS) $(CFLAGS_$(2)) $(CXXFLAGS) $(EASTL_CXXFLAGS) $(CUSTOM_CXXFLAGS) -c '$(1)' -o '$(call build_dir,$(3),$(2))'
-	@echo 'CXX $@'
+	@echo 'CXX $(2)'
+endef
+
+define MERGE_COMPILE_COMMANDS
+	$(call is_set,$(strip $(1)),First argument: Object files missing)
+	$(call is_set,$(strip $(2)),Second argument: Merged output JSON file missing)
+	@echo 'Merging Compile Commands to $(strip $(2))'
+	@echo '[' >'$(strip $(2))'
+	@$(foreach obj,$(strip $(1)),cat '$(obj).json' >>'$(strip $(2))' && echo ',' >>'$(strip $(2))';)
+	@sed -i '$${/^,$$/d}' '$(strip $(2))'
+	@echo ']' >>'$(strip $(2))'
 endef
 
 define LINK_C_KERNEL_TARGET

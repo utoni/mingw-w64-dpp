@@ -51,8 +51,8 @@ public:
         const auto & number_lf = ::to_string(1337.1337);
         DbgPrint("Value 1337lf to String: %s\n", number_lf.c_str());
 
-        DbgPrint("Value 0x00000000DEADBEEF to Hex String: 0x%s\n", ::to_string_hex(0xdeadbeef, 16));
-        DbgPrint("Value 0xDEADC0DEDEADBEEF to Hex String: 0x%s\n", ::to_string_hex(0xdeadc0dedeadbeef));
+        DbgPrint("Value 0x00000000DEADBEEF to Hex String: 0x%s\n", ::to_string_hex(0xdeadbeef, 16).c_str());
+        DbgPrint("Value 0xDEADC0DEDEADBEEF to Hex String: 0x%s\n", ::to_string_hex(0xdeadc0dedeadbeef).c_str());
     }
 };
 static TestSmth * cdtor_test;
@@ -120,7 +120,7 @@ public:
 
 static NTSTATUS threadRoutine(eastl::shared_ptr<DriverThread::ThreadArgs> args)
 {
-    DbgPrint("ThreadRoutine %p, ThreadContext: %p\n", threadRoutine, args);
+    DbgPrint("ThreadRoutine %p, ThreadContext: %p\n", threadRoutine, args.get());
     auto ctx = eastl::static_pointer_cast<threadContext>(args);
     for (size_t i = 3; i > 0; --i)
     {

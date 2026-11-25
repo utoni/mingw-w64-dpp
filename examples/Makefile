@@ -73,7 +73,7 @@ $(3_TARGET): $(3_OBJECTS)
 	$(call LINK_CPP_USER_TARGET,$(3_OBJECTS),$@)
 
 install: all
-	$(call INSTALL_EXEC,$(3_TARGET))
+	-$(call INSTALL_EXEC,$(3_TARGET))
 endif
 
 $(1_DRIVER_NAME): $(1_TARGET)

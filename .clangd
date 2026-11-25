@@ -1,0 +1,61 @@
+CompileFlags:
+  Add:
+    - "--target=x86_64-w64-mingw32"
+    - "-m64"
+
+    - "-ffreestanding"
+    - "-fno-builtin"
+    - "-fno-exceptions"
+    - "-fno-rtti"
+    - "-fno-stack-protector"
+    - "-mno-stack-arg-probe"
+
+    - "-Wno-pragma-pack"
+    - "-Wno-vla-cxx-extension"
+
+    - "-D__cpuidex=__cpuidex"
+    - "-D_AMD64_"
+    - "-D_M_AMD64"
+    - "-D_WIN64"
+    - "-DNTDDI_VERSION=0x0A000000" # Win10
+    - "-D_NTDDK_"
+
+    - "-D__INTRINSIC_DEFINED_InterlockedBitTestAndSet"
+    - "-D__INTRINSIC_DEFINED_InterlockedBitTestAndReset"
+
+    - "-DEASTL_USER_CONFIG_HEADER=<eastl_user_config.hpp>"
+    - "-DEASTL_EABASE_DISABLED=1"
+    - "-DEASTL_THREAD_SUPPORT_AVAILABLE=0"
+    - "-DEASTL_RTTI_ENABLED=0"
+    - "-DEASTL_EXCEPTIONS_ENABLED=0"
+    - "-DEASTL_ASSERT_ENABLED=0"
+    - "-DEASTL_EASTDC_VSNPRINTF=0"
+    - "-DEA_COMPILER_NO_EXCEPTIONS=1"
+    - "-DEA_COMPILER_MANAGED_CPP=1"
+
+  Remove:
+    - "-mno-stack-arg-probe"
+    - "-fvisibility=hidden"
+    - "-Werror"
+    - "-fuse-cxa-atexit"
+
+Diagnostics:
+  Suppress:
+    - "static_non_static"
+    - "null-dereference"
+    - "pp_including_mainfile_in_preamble"
+
+Index:
+  Background: Build
+
+---
+
+If:
+  PathMatch: "CRT/obfuscate\\.hpp"
+Diagnostics:
+  Suppress:
+    - "variable_object_no_init"
+    - "template_param_shadow"
+    - "unknown_typename"
+    - "constructor_return_type"
+    - "expected_semi_decl_list"
